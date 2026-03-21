@@ -21,13 +21,13 @@ interface ApplicationListProps {
 type SortKey = "institution_name" | "status" | "important_date" | "created_at";
 type SortDir = "asc" | "desc";
 
-export default function ApplicationList({ 
-  applications, 
-  onAdd, 
+export default function ApplicationList({
+  applications,
+  onAdd,
   onView,
-  onEdit, 
+  onEdit,
   onDelete,
-  showFilters = true 
+  showFilters = true
 }: ApplicationListProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -148,7 +148,7 @@ export default function ApplicationList({
                 Program
               </th>
               <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
-                Departmanlar
+                Başvurulan Departmanlar
               </th>
               <th className="text-left px-4 py-3">
                 <SortHeader label="Durum" field="status" />
