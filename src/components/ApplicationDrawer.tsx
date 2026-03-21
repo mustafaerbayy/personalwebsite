@@ -122,6 +122,24 @@ export default function ApplicationDrawer({
     if (application && formData.important_date) {
       saveReminders(application.id, formData.important_date);
     }
+    
+    if (!application) {
+      setFormData({
+        institution_name: "",
+        program_name: "",
+        department_names: [],
+        status: "basvuruldu",
+        notes: "",
+        website_url: "",
+        important_date: null,
+        important_date_label: "",
+        applied_date: new Date(),
+      });
+      setFiles([]);
+      setReminders(["1_week", "3_days", "2_days", "1_day"]);
+      setNewDeptName("");
+    }
+
     onClose();
   };
 
