@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { X, Plus, Upload, FileText, Download, Trash2, Eye } from "lucide-react";
+import { X, Plus, Upload, FileText, Download, Trash2, Eye, Pencil, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
+import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import StatusBadge from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -23,6 +25,8 @@ interface ApplicationDrawerProps {
   application?: Application | null;
   onSave: (data: any) => void;
   onDelete?: (id: string) => void;
+  isReadOnly?: boolean;
+  onEdit?: () => void;
 }
 
 export default function ApplicationDrawer({
@@ -31,6 +35,8 @@ export default function ApplicationDrawer({
   application,
   onSave,
   onDelete,
+  isReadOnly = false,
+  onEdit,
 }: ApplicationDrawerProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -270,43 +276,57 @@ export default function ApplicationDrawer({
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="space-y-2">
             <Label>Durum</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(v) => setFormData({ ...formData, status: v as ApplicationStatus })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isReadOnly ? (
+              <div className="py-2">
+                <StatusBadge status={formData.status} />
+              </div>
+            ) : (
+              <Select
+                value={formData.status}
+                onValueChange={(v) => setFormData({ ...formData, status: v as ApplicationStatus })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label>Kurum Adı *</Label>
-            <Input
-              value={formData.institution_name}
-              onChange={(e) => setFormData({ ...formData, institution_name: e.target.value })}
-              required
-            />
+            <Label>Kurum Adı</Label>
+            {isReadOnly ? (
+              <p className="text-foreground font-medium py-1">{formData.institution_name}</p>
+            ) : (
+              <Input
+                value={formData.institution_name}
+                onChange={(e) => setFormData({ ...formData, institution_name: e.target.value })}
+                required
+              />
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label>Program Adı *</Label>
-            <Input
-              value={formData.program_name}
-              onChange={(e) => setFormData({ ...formData, program_name: e.target.value })}
-              required
-            />
+            <Label>Program Adı</Label>
+            {isReadOnly ? (
+              <p className="text-foreground py-1">{formData.program_name}</p>
+            ) : (
+              <Input
+                value={formData.program_name}
+                onChange={(e) => setFormData({ ...formData, program_name: e.target.value })}
+                required
+              />
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label>Departmanlar</Label>
+            <Label>Başvurulan Departmanlar</Label>
             <div className="space-y-2">
-              {formData.department_names.length > 0 && (
+              {formData.department_names.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {formData.department_names.map((name) => (
                     <span
@@ -314,105 +334,145 @@ export default function ApplicationDrawer({
                       className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs font-medium text-foreground"
                     >
                       {name}
-                      <button
-                        type="button"
-                        onClick={() => removeDepartment(name)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      {!isReadOnly && (
+                        <button
+                          type="button"
+                          onClick={() => removeDepartment(name)}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
                     </span>
                   ))}
                 </div>
+              ) : isReadOnly ? (
+                <p className="text-muted-foreground text-sm italic py-1">Departman eklenmemiş</p>
+              ) : null}
+              {!isReadOnly && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Departman adı..."
+                    value={newDeptName}
+                    onChange={(e) => setNewDeptName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDepartment(); } }}
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={addDepartment}>
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
               )}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Departman adı..."
-                  value={newDeptName}
-                  onChange={(e) => setNewDeptName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDepartment(); } }}
-                  className="flex-1"
-                />
-                <Button type="button" variant="outline" size="sm" onClick={addDepartment}>
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>Web Sitesi</Label>
-            <Input
-              type="url"
-              value={formData.website_url}
-              onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
-              placeholder="https://..."
-            />
+            {isReadOnly ? (
+              formData.website_url ? (
+                <a
+                  href={formData.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline flex items-center gap-1.5 py-1 text-sm"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {formData.website_url}
+                </a>
+              ) : (
+                <p className="text-muted-foreground text-sm italic py-1">Eklenmemiş</p>
+              )
+            ) : (
+              <Input
+                type="url"
+                value={formData.website_url}
+                onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+                placeholder="https://..."
+              />
+            )}
           </div>
 
           <div className="space-y-2">
             <Label>Başvuru Tarihi</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.applied_date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.applied_date
-                    ? format(formData.applied_date, "dd/MM/yyyy")
-                    : "Tarih seç"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={formData.applied_date || undefined}
-                  onSelect={(d) => setFormData({ ...formData, applied_date: d || null })}
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Önemli Tarih</Label>
+            {isReadOnly ? (
+              <div className="flex items-center gap-2 py-1 text-sm text-foreground">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                {formData.applied_date ? format(formData.applied_date, "dd MMMM yyyy", { locale: tr }) : "Tarih seçilmemiş"}
+              </div>
+            ) : (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !formData.important_date && "text-muted-foreground"
+                      !formData.applied_date && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.important_date
-                      ? format(formData.important_date, "dd/MM/yyyy")
+                    {formData.applied_date
+                      ? format(formData.applied_date, "dd/MM/yyyy")
                       : "Tarih seç"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={formData.important_date || undefined}
-                    onSelect={(d) => setFormData({ ...formData, important_date: d || null })}
+                    selected={formData.applied_date || undefined}
+                    onSelect={(d) => setFormData({ ...formData, applied_date: d || null })}
                     className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Önemli Tarih</Label>
+              {isReadOnly ? (
+                <div className="flex items-center gap-2 py-1 text-sm text-foreground">
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                  {formData.important_date ? format(formData.important_date, "dd MMMM yyyy", { locale: tr }) : "Seçilmemiş"}
+                </div>
+              ) : (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.important_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.important_date
+                        ? format(formData.important_date, "dd/MM/yyyy")
+                        : "Tarih seç"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.important_date || undefined}
+                      onSelect={(d) => setFormData({ ...formData, important_date: d || null })}
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Tarih Açıklaması</Label>
-              <Input
-                value={formData.important_date_label}
-                onChange={(e) => setFormData({ ...formData, important_date_label: e.target.value })}
-                placeholder="ör. Mülakat, Sınav"
-              />
+              {isReadOnly ? (
+                <p className="text-foreground py-1 text-sm">{formData.important_date_label || "Açıklama yok"}</p>
+              ) : (
+                <Input
+                  value={formData.important_date_label}
+                  onChange={(e) => setFormData({ ...formData, important_date_label: e.target.value })}
+                  placeholder="ör. Mülakat, Sınav"
+                />
+              )}
             </div>
           </div>
 
@@ -421,10 +481,11 @@ export default function ApplicationDrawer({
               <Label>Hatırlatıcılar</Label>
               <div className="grid grid-cols-3 gap-2">
                 {REMIND_BEFORE_OPTIONS.map((opt) => (
-                  <label key={opt.value} className="flex items-center gap-1.5 text-sm">
+                  <label key={opt.value} className={cn("flex items-center gap-1.5 text-sm", isReadOnly && "opacity-80 pointer-events-none")}>
                     <Checkbox
                       checked={reminders.includes(opt.value)}
-                      onCheckedChange={() => toggleReminder(opt.value)}
+                      onCheckedChange={() => !isReadOnly && toggleReminder(opt.value)}
+                      disabled={isReadOnly}
                     />
                     {opt.label}
                   </label>
@@ -435,12 +496,18 @@ export default function ApplicationDrawer({
 
           <div className="space-y-2">
             <Label>Notlar</Label>
-            <Textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
-              placeholder="Ek notlar..."
-            />
+            {isReadOnly ? (
+              <div className="bg-muted p-3 rounded-md min-h-[50px] whitespace-pre-wrap text-sm text-foreground">
+                {formData.notes || "Not bulunmuyor."}
+              </div>
+            ) : (
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+                placeholder="Ek notlar..."
+              />
+            )}
           </div>
 
           {application && (
@@ -457,12 +524,14 @@ export default function ApplicationDrawer({
                     <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownloadFile(file)} title="İndir">
                       <Download className="h-3.5 w-3.5" />
                     </Button>
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteFile(file)} title="Sil">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {!isReadOnly && (
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteFile(file)} title="Sil">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 ))}
-                {files.length < 4 && (
+                {!isReadOnly && files.length < 4 && (
                   <label className="flex items-center gap-2 cursor-pointer rounded-md border border-dashed border-border p-3 hover:bg-muted/50 transition-colors">
                     <Upload className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
@@ -477,35 +546,46 @@ export default function ApplicationDrawer({
                     />
                   </label>
                 )}
+                {isReadOnly && files.length === 0 && (
+                  <p className="text-muted-foreground text-sm italic py-1">Dosya eklenmemiş</p>
+                )}
               </div>
             </div>
           )}
 
-          <div className="flex flex-col gap-3 pt-4 border-t border-border">
-            <div className="flex gap-3">
-              <Button type="submit" className="flex-1">
-                {application ? "Güncelle" : "Oluştur"}
-              </Button>
-              <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-                İptal
+          {!isReadOnly ? (
+            <div className="flex flex-col gap-3 pt-4 border-t border-border">
+              <div className="flex gap-3">
+                <Button type="submit" className="flex-1">
+                  {application ? "Güncelle" : "Oluştur"}
+                </Button>
+                <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+                  İptal
+                </Button>
+              </div>
+
+              {application && onDelete && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
+                  onClick={() => {
+                    onDelete(application.id);
+                    onClose();
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Başvuruyu Sil
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="pt-4 border-t border-border">
+              <Button type="button" variant="secondary" className="w-full" onClick={onClose}>
+                Kapat
               </Button>
             </div>
-            
-            {application && onDelete && (
-              <Button 
-                type="button" 
-                variant="ghost" 
-                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
-                onClick={() => {
-                  onDelete(application.id);
-                  onClose();
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-                Başvuruyu Sil
-              </Button>
-            )}
-          </div>
+          )}
         </form>
       </div>
     </div>

@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 interface ApplicationListProps {
   applications: Application[];
   onAdd: () => void;
+  onView: (app: Application) => void;
   onEdit: (app: Application) => void;
   onDelete: (id: string) => void;
   showFilters?: boolean;
@@ -23,6 +24,7 @@ type SortDir = "asc" | "desc";
 export default function ApplicationList({ 
   applications, 
   onAdd, 
+  onView,
   onEdit, 
   onDelete,
   showFilters = true 
@@ -174,7 +176,7 @@ export default function ApplicationList({
                 <tr
                   key={app.id}
                   className="hover:bg-muted/30 transition-colors cursor-pointer group"
-                  onClick={() => onEdit(app)}
+                  onClick={() => onView(app)}
                 >
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2">
@@ -246,7 +248,7 @@ export default function ApplicationList({
             <div
               key={app.id}
               className="rounded-xl border border-border bg-card p-4 space-y-3 cursor-pointer active:bg-muted/30 transition-colors"
-              onClick={() => onEdit(app)}
+              onClick={() => onView(app)}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">

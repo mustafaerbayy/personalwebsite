@@ -4,6 +4,7 @@ import { useApplications } from "@/hooks/useApplications";
 import ApplicationList from "@/components/ApplicationList";
 import CalendarView from "@/components/CalendarView";
 import ApplicationDrawer from "@/components/ApplicationDrawer";
+import ApplicationDetailsDialog from "@/components/ApplicationDetailsDialog";
 import { Application, STATUS_LABELS } from "@/types/application";
 import {
   LayoutDashboard,
@@ -44,15 +45,24 @@ export default function Dashboard() {
 
   const [activeView, setActiveView] = useState<"list" | "calendar">("list");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<Application | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
 
   const handleAdd = () => {
     setEditingApp(null);
+    setIsReadOnly(false);
     setDrawerOpen(true);
+  };
+
+  const handleView = (app: Application) => {
+    setEditingApp(app);
+    setDetailsOpen(true);
   };
 
   const handleEdit = (app: Application) => {
     setEditingApp(app);
+    setIsReadOnly(false);
     setDrawerOpen(true);
   };
 
@@ -231,6 +241,7 @@ export default function Dashboard() {
           <ApplicationList
             applications={applications}
             onAdd={handleAdd}
+            onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
             showFilters={!isMobile || isStatsExpanded}
@@ -238,7 +249,7 @@ export default function Dashboard() {
         ) : (
           <CalendarView
             applications={applications}
-            onSelectApp={handleEdit}
+            onSelectApp={handleView}
           />
         )}
       </main>
@@ -249,6 +260,15 @@ export default function Dashboard() {
         application={editingApp}
         onSave={handleSave}
         onDelete={handleDelete}
+        isReadOnly={isReadOnly}
+        onEdit={() => setIsReadOnly(false)}
+      />
+
+      <ApplicationDetailsDialog
+        open={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        application={editingApp}
+        onEdit={handleEdit}
       />
     </div>
   );
