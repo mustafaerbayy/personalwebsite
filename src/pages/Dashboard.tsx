@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useApplications } from "@/hooks/useApplications";
 import ApplicationList from "@/components/ApplicationList";
@@ -15,13 +15,21 @@ import {
   XCircle,
   Clock,
   ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function Dashboard() {
+  const isMobile = useIsMobile();
+  const [isStatsExpanded, setIsStatsExpanded] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const {
@@ -164,32 +172,55 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* Stats cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-xl border border-border bg-card p-4 flex items-center gap-3"
-            >
-              <div
-                className={cn(
-                  "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
-                  stat.color
-                )}
-              >
-                <stat.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-display font-bold text-foreground leading-none">
-                  {stat.value}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {stat.label}
-                </p>
-              </div>
+        {/* Mobile Toggle for Stats and Filters */}
+        {isMobile && (
+          <Button
+            variant="outline"
+            className="w-full flex items-center justify-between bg-card border-border shadow-sm h-11"
+            onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+          >
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Filter className="h-4 w-4" />
+              <span className="text-sm font-medium">İstatistikler ve Filtreler</span>
             </div>
-          ))}
-        </div>
+            {isStatsExpanded ? (
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            )}
+          </Button>
+        )}
+
+        <Collapsible open={!isMobile || isStatsExpanded}>
+          <CollapsibleContent className="space-y-6">
+            {/* Stats cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-xl border border-border bg-card p-4 flex items-center gap-3 transition-all hover:shadow-md"
+                >
+                  <div
+                    className={cn(
+                      "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
+                      stat.color
+                    )}
+                  >
+                    <stat.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-display font-bold text-foreground leading-none">
+                      {stat.value}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {stat.label}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Content */}
         {isLoading ? (
@@ -202,6 +233,7 @@ export default function Dashboard() {
             onAdd={handleAdd}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            showFilters={!isMobile || isStatsExpanded}
           />
         ) : (
           <CalendarView
@@ -216,6 +248,7 @@ export default function Dashboard() {
         onClose={() => setDrawerOpen(false)}
         application={editingApp}
         onSave={handleSave}
+        onDelete={handleDelete}
       />
     </div>
   );

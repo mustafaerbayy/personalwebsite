@@ -22,6 +22,7 @@ interface ApplicationDrawerProps {
   onClose: () => void;
   application?: Application | null;
   onSave: (data: any) => void;
+  onDelete?: (id: string) => void;
 }
 
 export default function ApplicationDrawer({
@@ -29,6 +30,7 @@ export default function ApplicationDrawer({
   onClose,
   application,
   onSave,
+  onDelete,
 }: ApplicationDrawerProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -76,7 +78,7 @@ export default function ApplicationDrawer({
         applied_date: new Date(),
       });
       setFiles([]);
-      setReminders([]);
+      setReminders(["1_week", "3_days", "2_days", "1_day"]);
     }
   }, [application]);
 
@@ -267,6 +269,23 @@ export default function ApplicationDrawer({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="space-y-2">
+            <Label>Durum</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(v) => setFormData({ ...formData, status: v as ApplicationStatus })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label>Kurum Adı *</Label>
             <Input
               value={formData.institution_name}
@@ -319,23 +338,6 @@ export default function ApplicationDrawer({
                 </Button>
               </div>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Durum</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(v) => setFormData({ ...formData, status: v as ApplicationStatus })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2">
@@ -479,13 +481,30 @@ export default function ApplicationDrawer({
             </div>
           )}
 
-          <div className="flex gap-3 pt-2">
-            <Button type="submit" className="flex-1">
-              {application ? "Güncelle" : "Oluştur"}
-            </Button>
-            <Button type="button" variant="outline" onClick={onClose}>
-              İptal
-            </Button>
+          <div className="flex flex-col gap-3 pt-4 border-t border-border">
+            <div className="flex gap-3">
+              <Button type="submit" className="flex-1">
+                {application ? "Güncelle" : "Oluştur"}
+              </Button>
+              <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+                İptal
+              </Button>
+            </div>
+            
+            {application && onDelete && (
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
+                onClick={() => {
+                  onDelete(application.id);
+                  onClose();
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+                Başvuruyu Sil
+              </Button>
+            )}
           </div>
         </form>
       </div>

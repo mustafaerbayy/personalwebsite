@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ExternalLink, Pencil, Trash2, Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { ExternalLink, Pencil, Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,19 @@ interface ApplicationListProps {
   onAdd: () => void;
   onEdit: (app: Application) => void;
   onDelete: (id: string) => void;
+  showFilters?: boolean;
 }
 
 type SortKey = "institution_name" | "status" | "important_date" | "created_at";
 type SortDir = "asc" | "desc";
 
-export default function ApplicationList({ applications, onAdd, onEdit, onDelete }: ApplicationListProps) {
+export default function ApplicationList({ 
+  applications, 
+  onAdd, 
+  onEdit, 
+  onDelete,
+  showFilters = true 
+}: ApplicationListProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
@@ -101,29 +108,31 @@ export default function ApplicationList({ applications, onAdd, onEdit, onDelete 
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Kurum veya program ara..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-card"
-          />
+      {showFilters && (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Kurum veya program ara..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 bg-card"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48 bg-card">
+              <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <SelectValue placeholder="Tüm durumlar" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tüm Durumlar</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                <SelectItem key={key} value={key}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48 bg-card">
-            <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-            <SelectValue placeholder="Tüm durumlar" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tüm Durumlar</SelectItem>
-            {Object.entries(STATUS_LABELS).map(([key, label]) => (
-              <SelectItem key={key} value={key}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      )}
 
       {/* Desktop table */}
       <div className="hidden md:block rounded-xl border border-border bg-card overflow-hidden">
@@ -214,14 +223,6 @@ export default function ApplicationList({ applications, onAdd, onEdit, onDelete 
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={(e) => { e.stopPropagation(); onDelete(app.id); }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -255,49 +256,47 @@ export default function ApplicationList({ applications, onAdd, onEdit, onDelete 
                 <StatusBadge status={app.status} />
               </div>
 
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex flex-wrap gap-1">
-                  {(app as any).department_names?.map((name: string) => (
-                    <span key={name} className="rounded-md bg-muted px-1.5 py-0.5 text-[11px]">
-                      {name}
-                    </span>
-                  ))}
-                </div>
-                <span>
-                  {app.important_date
-                    ? format(new Date(app.important_date), "d MMM", { locale: tr })
-                    : ""}
-                </span>
+              <div className="flex flex-wrap gap-1">
+                {(app as any).department_names?.map((name: string) => (
+                  <span key={name} className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                    {name}
+                  </span>
+                ))}
               </div>
 
-              <div className="flex items-center justify-end gap-1 pt-1 border-t border-border">
-                {app.website_url && (
+              <div className="flex items-center pt-2 border-t border-border">
+                {app.website_url ? (
                   <a
                     href={app.website_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="text-muted-foreground hover:text-primary p-1.5"
+                    className="text-muted-foreground hover:text-primary p-2"
                   >
                     <ExternalLink className="h-4 w-4" />
                   </a>
+                ) : (
+                  <div className="w-8" /> // Spacer for alignment
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={(e) => { e.stopPropagation(); onEdit(app); }}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive"
-                  onClick={(e) => { e.stopPropagation(); onDelete(app.id); }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+
+                <div className="flex-1 text-center">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {app.important_date
+                      ? format(new Date(app.important_date), "d MMMM", { locale: tr })
+                      : ""}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => { e.stopPropagation(); onEdit(app); }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))
