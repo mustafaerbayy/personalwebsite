@@ -1,0 +1,1 @@
+ALTER TABLE public.applications ADD COLUMN department_names text[] DEFAULT '{}'::text[];

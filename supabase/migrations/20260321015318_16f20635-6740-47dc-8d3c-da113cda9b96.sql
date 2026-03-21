@@ -1,0 +1,1 @@
+ALTER TABLE public.applications ADD COLUMN applied_date timestamp with time zone DEFAULT now();
