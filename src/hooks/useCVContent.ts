@@ -29,7 +29,7 @@ export interface CVData {
 
 export const defaultContent: Record<"en" | "tr", CVData> = {
   en: {
-    name: "Muhammed Erbay",
+    name: "Mustafa A. Erbay",
     title: "Software Engineer",
     location: "Turkey",
     summary: "Passionate software engineer with experience in building modern web applications.",
@@ -45,7 +45,7 @@ export const defaultContent: Record<"en" | "tr", CVData> = {
     linkedinUrl: "https://www.linkedin.com/in/merbay/",
   },
   tr: {
-    name: "Muhammed Erbay",
+    name: "Mustafa A. Erbay",
     title: "Yazılım Mühendisi",
     location: "Türkiye",
     summary: "Modern web uygulamaları geliştirme deneyimine sahip, tutkulu bir yazılım mühendisi.",
