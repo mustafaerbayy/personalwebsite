@@ -32,7 +32,7 @@ export const defaultContent: Record<"en" | "tr", CVData> = {
     name: "Mustafa A. Erbay",
     title: "Software Engineer",
     location: "Turkey",
-    summary: "Passionate software engineer with experience in building modern web applications.",
+    summary: "I am a systems and network administration student who is passionate about IT and modern software.",
     experience: [
       { role: "Software Engineer", company: "Company Name", period: "2023 – Present", description: "Developed and maintained full-stack web applications." },
     ],

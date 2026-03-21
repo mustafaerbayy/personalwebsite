@@ -52,7 +52,7 @@ export function HeroSection({ data }: { data: CVData }) {
         backgroundSize: "60px 60px",
       }} />
 
-      <motion.div className="relative z-10 mx-auto w-full max-w-6xl px-6 sm:px-12" style={{ y: textY, opacity }}>
+      <motion.div className="relative z-10 mx-auto w-full max-w-6xl px-6 sm:px-12 max-sm:mt-24" style={{ y: textY, opacity }}>
         <div className="flex flex-col gap-8 lg:gap-16">
           {/* Name — oversized display */}
           <motion.div

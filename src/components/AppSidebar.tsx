@@ -19,9 +19,9 @@ export default function AppSidebar({ activeView, onViewChange }: AppSidebarProps
     <aside className="flex h-screen w-56 flex-col border-r border-border bg-card">
       <div className="flex h-14 items-center gap-2 border-b border-border px-4">
         <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-          <span className="text-xs font-bold text-primary-foreground">BT</span>
+          <span className="text-xs font-bold text-primary-foreground">ME</span>
         </div>
-        <span className="font-display font-semibold text-sm text-foreground">Başvuru Takip</span>
+        <span className="font-display font-semibold text-sm text-foreground">Mustafa Erbay</span>
       </div>
       <nav className="flex-1 space-y-1 p-2">
         {navItems.map((item) => (

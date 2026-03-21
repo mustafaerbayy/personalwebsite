@@ -137,10 +137,10 @@ export default function Dashboard() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-xs font-bold text-primary-foreground">BT</span>
+              <span className="text-xs font-bold text-primary-foreground">ME</span>
             </div>
             <span className="font-display font-semibold text-foreground hidden sm:inline">
-              Başvuru Takip
+              Mustafa Erbay
             </span>
           </div>
 

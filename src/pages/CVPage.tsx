@@ -60,34 +60,34 @@ export default function CVPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Floating nav */}
-      <header className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <header className="fixed top-6 right-6 z-50 flex items-center gap-2 max-sm:right-1/2 max-sm:translate-x-1/2 max-sm:bg-card/40 max-sm:backdrop-blur-xl max-sm:p-2 max-sm:rounded-full max-sm:border max-sm:border-border/50 max-sm:shadow-2xl max-sm:w-max">
         {user && !editMode && (
-          <Button variant="outline" size="sm" onClick={() => setEditMode(true)} className="gap-1.5 rounded-full border-border bg-card/80 text-xs backdrop-blur-md shadow-lg">
+          <Button variant="outline" size="sm" onClick={() => setEditMode(true)} className="gap-1.5 rounded-full border-border bg-card/80 text-xs backdrop-blur-md shadow-lg h-9">
             <Pencil className="h-3.5 w-3.5" />{lang === "en" ? "Edit" : "Düzenle"}
           </Button>
         )}
         {editMode && (
           <>
-            <Button variant="outline" size="sm" onClick={handleCancel} className="gap-1.5 rounded-full border-border bg-card/80 text-xs text-muted-foreground backdrop-blur-md shadow-lg">
+            <Button variant="outline" size="sm" onClick={handleCancel} className="gap-1.5 rounded-full border-border bg-card/80 text-xs text-muted-foreground backdrop-blur-md shadow-lg h-9">
               <X className="h-3.5 w-3.5" />{lang === "en" ? "Cancel" : "İptal"}
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5 rounded-full text-xs shadow-lg">
+            <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5 rounded-full text-xs shadow-lg h-9">
               <Save className="h-3.5 w-3.5" />{isSaving ? "..." : lang === "en" ? "Save" : "Kaydet"}
             </Button>
           </>
         )}
         {user && (
-          <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")} className="gap-1.5 rounded-full border-border bg-card/80 text-xs backdrop-blur-md shadow-lg">
-            <LayoutDashboard className="h-3.5 w-3.5" />
+          <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")} className="gap-1.5 rounded-full border-border bg-card/80 text-xs backdrop-blur-md shadow-lg h-9">
+            <LayoutDashboard className="h-3.5 w-3.5" /> {lang === "en" ? "Panel" : "Panel"}
           </Button>
         )}
         {!user && (
-          <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")} className="gap-1.5 rounded-full border-border bg-card/80 text-xs backdrop-blur-md shadow-lg">
-            <LogIn className="h-3.5 w-3.5" />
+          <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")} className="gap-1.5 rounded-full border-border bg-card/80 text-xs backdrop-blur-md shadow-lg h-9">
+            <LogIn className="h-3.5 w-3.5" /> {lang === "en" ? "Login" : "Giriş"}
           </Button>
         )}
-        <ThemeToggle className="rounded-full border-border bg-card/80 backdrop-blur-md shadow-lg h-9 w-9" />
-        <Button variant="outline" size="sm" onClick={() => setLang(lang === "en" ? "tr" : "en")} className="gap-1.5 rounded-full border-border bg-card/80 text-xs backdrop-blur-md shadow-lg">
+        <ThemeToggle className="rounded-full border-border bg-card/80 backdrop-blur-md shadow-lg h-9" label={lang === "en" ? "Theme" : "Tema"} />
+        <Button variant="outline" size="sm" onClick={() => setLang(lang === "en" ? "tr" : "en")} className="gap-1.5 rounded-full border-border bg-card/80 text-xs backdrop-blur-md shadow-lg h-9">
           <Globe className="h-3.5 w-3.5" />{labels.langToggle}
         </Button>
       </header>

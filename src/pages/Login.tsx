@@ -33,7 +33,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-display font-bold text-foreground">Başvuru Takip</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">Mustafa Erbay</h1>
           <p className="text-sm text-muted-foreground">Hesabınıza giriş yapın</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
