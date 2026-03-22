@@ -23,7 +23,7 @@ interface ApplicationDrawerProps {
   open: boolean;
   onClose: () => void;
   application?: Application | null;
-  onSave: (data: any) => void;
+  onSave: (data: any) => any;
   onDelete?: (id: string) => void;
   isReadOnly?: boolean;
   onEdit?: () => void;
@@ -53,6 +53,7 @@ export default function ApplicationDrawer({
   });
   const [newDeptName, setNewDeptName] = useState("");
   const [files, setFiles] = useState<ApplicationFile[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [reminders, setReminders] = useState<string[]>([]);
 
@@ -84,6 +85,7 @@ export default function ApplicationDrawer({
         applied_date: new Date(),
       });
       setFiles([]);
+      setPendingFiles([]);
       setReminders(["1_week", "3_days", "2_days", "1_day"]);
     }
   }, [application]);
@@ -104,43 +106,79 @@ export default function ApplicationDrawer({
     setReminders(data?.map((r) => r.remind_before) || []);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      ...(application ? { id: application.id } : {}),
-      institution_name: formData.institution_name,
-      program_name: formData.program_name,
-      department_names: formData.department_names,
-      status: formData.status,
-      notes: formData.notes || null,
-      website_url: formData.website_url || null,
-      important_date: formData.important_date?.toISOString() || null,
-      important_date_label: formData.important_date_label || null,
-      applied_date: formData.applied_date?.toISOString() || null,
-    });
-    // Save reminders if we have an application and important_date
-    if (application && formData.important_date) {
-      saveReminders(application.id, formData.important_date);
-    }
+    setUploading(true);
     
-    if (!application) {
-      setFormData({
-        institution_name: "",
-        program_name: "",
-        department_names: [],
-        status: "basvuruldu",
-        notes: "",
-        website_url: "",
-        important_date: null,
-        important_date_label: "",
-        applied_date: new Date(),
+    try {
+      const savedApp = await onSave({
+        ...(application ? { id: application.id } : {}),
+        institution_name: formData.institution_name,
+        program_name: formData.program_name,
+        department_names: formData.department_names,
+        status: formData.status,
+        notes: formData.notes || null,
+        website_url: formData.website_url || null,
+        important_date: formData.important_date?.toISOString() || null,
+        important_date_label: formData.important_date_label || null,
+        applied_date: formData.applied_date?.toISOString() || null,
       });
-      setFiles([]);
-      setReminders(["1_week", "3_days", "2_days", "1_day"]);
-      setNewDeptName("");
-    }
 
-    onClose();
+      const appId = application ? application.id : (savedApp?.id || null);
+
+      if (appId && pendingFiles.length > 0) {
+        for (const file of pendingFiles) {
+          const sanitizedFileName = file.name
+            .normalize("NFD")
+            .replace(/[\\u0300-\\u036f]/g, "")
+            .replace(/[^a-zA-Z0-9.-]/g, "_");
+            
+          const filePath = `${user!.id}/${appId}/${Date.now()}_${sanitizedFileName}`;
+          const { error: uploadError } = await supabase.storage
+            .from("application-files")
+            .upload(filePath, file);
+
+          if (!uploadError) {
+            await supabase.from("application_files").insert({
+              application_id: appId,
+              user_id: user!.id,
+              file_name: file.name,
+              file_path: filePath,
+              file_type: file.type,
+              file_size: file.size,
+            });
+          }
+        }
+      }
+
+      if (appId && formData.important_date) {
+        saveReminders(appId, formData.important_date);
+      }
+      
+      if (!application) {
+        setFormData({
+          institution_name: "",
+          program_name: "",
+          department_names: [],
+          status: "basvuruldu",
+          notes: "",
+          website_url: "",
+          important_date: null,
+          important_date_label: "",
+          applied_date: new Date(),
+        });
+        setFiles([]);
+        setPendingFiles([]);
+        setReminders(["1_week", "3_days", "2_days", "1_day"]);
+        setNewDeptName("");
+      }
+
+      onClose();
+    } catch (error) {
+      toast.error("İşlem sırasında bir hata oluştu");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const saveReminders = async (appId: string, importantDate: Date) => {
@@ -175,8 +213,8 @@ export default function ApplicationDrawer({
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!application || !e.target.files) return;
-    if (files.length >= 4) {
+    if (!e.target.files?.length) return;
+    if (files.length + pendingFiles.length >= 4) {
       toast.error("Maksimum 4 dosya yüklenebilir");
       return;
     }
@@ -192,8 +230,21 @@ export default function ApplicationDrawer({
       return;
     }
 
+    if (!application) {
+      setPendingFiles((prev) => [...prev, file]);
+      toast.success("Dosya eklendi (Başvuruyu oluşturduktan sonra kaydedilecek)");
+      return;
+    }
+
     setUploading(true);
-    const filePath = `${user!.id}/${application.id}/${Date.now()}_${file.name}`;
+    
+    // Replace non-ascii and unsafe characters from file name
+    const sanitizedFileName = file.name
+      .normalize("NFD")
+      .replace(/[\\u0300-\\u036f]/g, "") // Remove diacritics
+      .replace(/[^a-zA-Z0-9.-]/g, "_");  // Replace invalid characters with underscore
+      
+    const filePath = `${user!.id}/${application.id}/${Date.now()}_${sanitizedFileName}`;
     const { error: uploadError } = await supabase.storage
       .from("application-files")
       .upload(filePath, file);
@@ -528,48 +579,59 @@ export default function ApplicationDrawer({
             )}
           </div>
 
-          {application && (
+          <div className="space-y-2">
+            <Label>Dosyalar ({files.length + pendingFiles.length}/4)</Label>
             <div className="space-y-2">
-              <Label>Dosyalar ({files.length}/4)</Label>
-              <div className="space-y-2">
-                {files.map((file) => (
-                  <div key={file.id} className="flex items-center gap-2 rounded-md border border-border p-2">
-                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="text-sm truncate flex-1">{file.file_name}</span>
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePreviewFile(file)} title="Önizle">
-                      <Eye className="h-3.5 w-3.5" />
+              {files.map((file) => (
+                <div key={file.id} className="flex items-center gap-2 rounded-md border border-border p-2">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm truncate flex-1">{file.file_name}</span>
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePreviewFile(file)} title="Önizle">
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownloadFile(file)} title="İndir">
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                  {!isReadOnly && (
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteFile(file)} title="Sil">
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownloadFile(file)} title="İndir">
-                      <Download className="h-3.5 w-3.5" />
+                  )}
+                </div>
+              ))}
+              
+              {pendingFiles.map((file, index) => (
+                <div key={`pending-${index}`} className="flex items-center gap-2 rounded-md border border-border p-2 bg-muted/30">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm truncate flex-1 text-muted-foreground">{file.name} (Kaydedilecek)</span>
+                  {!isReadOnly && (
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== index))} title="Sil">
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
-                    {!isReadOnly && (
-                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteFile(file)} title="Sil">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                {!isReadOnly && files.length < 4 && (
-                  <label className="flex items-center gap-2 cursor-pointer rounded-md border border-dashed border-border p-3 hover:bg-muted/50 transition-colors">
-                    <Upload className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      {uploading ? "Yükleniyor..." : "PDF veya Word yükle"}
-                    </span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleFileUpload}
-                      disabled={uploading}
-                    />
-                  </label>
-                )}
-                {isReadOnly && files.length === 0 && (
-                  <p className="text-muted-foreground text-sm italic py-1">Dosya eklenmemiş</p>
-                )}
-              </div>
+                  )}
+                </div>
+              ))}
+
+              {!isReadOnly && (files.length + pendingFiles.length) < 4 && (
+                <label className="flex items-center gap-2 cursor-pointer rounded-md border border-dashed border-border p-3 hover:bg-muted/50 transition-colors">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    {uploading ? "Yükleniyor..." : "PDF veya Word yükle"}
+                  </span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                  />
+                </label>
+              )}
+              {isReadOnly && (files.length + pendingFiles.length) === 0 && (
+                <p className="text-muted-foreground text-sm italic py-1">Dosya eklenmemiş</p>
+              )}
             </div>
-          )}
+          </div>
 
           {!isReadOnly ? (
             <div className="flex flex-col gap-3 pt-4 border-t border-border">

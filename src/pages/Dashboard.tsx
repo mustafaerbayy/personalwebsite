@@ -66,11 +66,12 @@ export default function Dashboard() {
     setDrawerOpen(true);
   };
 
-  const handleSave = (data: any) => {
+  const handleSave = async (data: any) => {
     if (data.id) {
-      updateApplication.mutate(data);
+      await updateApplication.mutateAsync(data);
+      return data;
     } else {
-      createApplication.mutate(data);
+      return await createApplication.mutateAsync(data);
     }
   };
 
