@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import { ExternalLink, Pencil, Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { ExternalLink, Pencil, Search, SlidersHorizontal, ArrowUpDown, MoreHorizontal, Trash2, Briefcase } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import StatusBadge from "@/components/StatusBadge";
 import { Application, ApplicationStatus, STATUS_LABELS } from "@/types/application";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,15 @@ export default function ApplicationList({
     } else {
       setSortKey(key);
       setSortDir("asc");
+    }
+  };
+
+  const getDomain = (url: string | null) => {
+    if (!url) return null;
+    try {
+      return new URL(url).hostname;
+    } catch {
+      return null;
     }
   };
 
@@ -164,10 +174,18 @@ export default function ApplicationList({
           <tbody className="divide-y divide-border">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-12 text-muted-foreground">
-                  <div className="flex flex-col items-center gap-2">
-                    <Search className="h-8 w-8 text-muted-foreground/40" />
-                    <p>Henüz başvuru yok</p>
+                <td colSpan={6} className="text-center py-20 text-muted-foreground">
+                  <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                      <Briefcase className="h-8 w-8 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold text-foreground">Henüz Başvuru Bulunamadı</h3>
+                      <p className="text-sm max-w-[250px] mx-auto">Kariyer yolculuğunuza başlamak için hemen yeni bir başvuru ekleyin.</p>
+                    </div>
+                    <Button onClick={onAdd} className="mt-2 shadow-lg shadow-primary/20">
+                      Başvuru Ekle
+                    </Button>
                   </div>
                 </td>
               </tr>
@@ -179,19 +197,39 @@ export default function ApplicationList({
                   onClick={() => onView(app)}
                 >
                   <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-foreground">{app.institution_name}</span>
-                      {app.website_url && (
-                        <a
-                          href={app.website_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <div className="relative shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-muted border border-border overflow-hidden">
+                        {getDomain(app.website_url) ? (
+                          <img 
+                            src={`https://logo.clearbit.com/${getDomain(app.website_url)}`} 
+                            alt={app.institution_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className={cn("absolute inset-0 bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold uppercase", 
+                                        getDomain(app.website_url) ? "hidden" : "flex")}>
+                          {app.institution_name.substring(0, 2)}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">{app.institution_name}</span>
+                        {app.website_url && (
+                          <a
+                            href={app.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3.5 text-muted-foreground">{app.program_name}</td>
@@ -211,9 +249,17 @@ export default function ApplicationList({
                     <StatusBadge status={app.status} />
                   </td>
                   <td className="px-4 py-3.5 text-muted-foreground text-sm">
-                    {app.important_date
-                      ? format(new Date(app.important_date), "d MMM yyyy", { locale: tr })
-                      : "—"}
+                    <div className="flex items-center gap-2">
+                      {app.important_date
+                        ? format(new Date(app.important_date), "d MMM yyyy", { locale: tr })
+                        : "—"}
+                      {app.important_date && (new Date(app.important_date).getTime() - Date.now() < 24 * 60 * 60 * 1000 * 3) && (new Date(app.important_date).getTime() > Date.now()) && (
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3.5 text-right">
                     <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -225,6 +271,23 @@ export default function ApplicationList({
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(app); }}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            <span>Düzenle</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(app.id); }} className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Sil</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </td>
                 </tr>
@@ -237,10 +300,13 @@ export default function ApplicationList({
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
         {filtered.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <div className="flex flex-col items-center gap-2">
-              <Search className="h-8 w-8 text-muted-foreground/40" />
-              <p>Henüz başvuru yok</p>
+          <div className="text-center py-16 text-muted-foreground border border-dashed rounded-xl border-border bg-card/50">
+            <div className="flex flex-col items-center gap-3">
+              <Briefcase className="h-8 w-8 text-primary/40" />
+              <p className="text-sm">Henüz başvuru bulunamadı</p>
+              <Button onClick={onAdd} size="sm" variant="outline" className="mt-2">
+                Başvuru Ekle
+              </Button>
             </div>
           </div>
         ) : (

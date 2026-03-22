@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useApplications } from "@/hooks/useApplications";
 import ApplicationList from "@/components/ApplicationList";
+import ApplicationBoard from "@/components/ApplicationBoard";
 import CalendarView from "@/components/CalendarView";
 import ApplicationDrawer from "@/components/ApplicationDrawer";
 import ApplicationDetailsDialog from "@/components/ApplicationDetailsDialog";
@@ -20,6 +21,7 @@ import {
   ChevronUp,
   Search,
   Filter,
+  Kanban,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -27,6 +29,7 @@ import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const isMobile = useIsMobile();
@@ -43,7 +46,7 @@ export default function Dashboard() {
     createDepartment,
   } = useApplications();
 
-  const [activeView, setActiveView] = useState<"list" | "calendar">("list");
+  const [activeView, setActiveView] = useState<"list" | "board" | "calendar">("list");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<Application | null>(null);
@@ -96,30 +99,35 @@ export default function Dashboard() {
       label: "Toplam Başvuru",
       value: totalApps,
       icon: Briefcase,
-      color: "text-primary bg-primary/10",
+      color: "text-primary bg-primary/10 border-primary/20",
+      gradient: "from-primary/5 to-transparent",
     },
     {
       label: "Aktif Süreç",
       value: activeApps,
       icon: Clock,
-      color: "text-warning bg-warning/10",
+      color: "text-warning bg-warning/10 border-warning/20",
+      gradient: "from-warning/5 to-transparent",
     },
     {
       label: "Kabul",
       value: acceptedApps,
       icon: CheckCircle2,
-      color: "text-success bg-success/10",
+      color: "text-success bg-success/10 border-success/20",
+      gradient: "from-success/5 to-transparent",
     },
     {
       label: "Ret",
       value: rejectedApps,
       icon: XCircle,
-      color: "text-destructive bg-destructive/10",
+      color: "text-destructive bg-destructive/10 border-destructive/20",
+      gradient: "from-destructive/5 to-transparent",
     },
   ];
 
   const navItems = [
     { id: "list" as const, label: "Liste", icon: LayoutDashboard },
+    { id: "board" as const, label: "Pano", icon: Kanban },
     { id: "calendar" as const, label: "Takvim", icon: Calendar },
   ];
 
@@ -206,28 +214,40 @@ export default function Dashboard() {
           <CollapsibleContent className="space-y-6">
             {/* Stats cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {stats.map((stat) => (
-                <div
+              {stats.map((stat, i) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1, duration: 0.3 }}
                   key={stat.label}
-                  className="rounded-xl border border-border bg-card p-4 flex items-center gap-3 transition-all hover:shadow-md"
+                  className={cn(
+                    "rounded-xl border border-border bg-card p-4 flex items-center gap-3 transition-all hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-lg relative overflow-hidden group",
+                    `bg-gradient-to-br ${stat.gradient}`
+                  )}
                 >
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div
                     className={cn(
-                      "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
+                      "h-10 w-10 rounded-lg flex items-center justify-center shrink-0 border backdrop-blur-sm relative z-10",
                       stat.color
                     )}
                   >
                     <stat.icon className="h-5 w-5" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-display font-bold text-foreground leading-none">
+                  <div className="relative z-10">
+                    <motion.p 
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: i * 0.1 + 0.2, type: "spring" }}
+                      className="text-2xl font-display font-bold text-foreground leading-none"
+                    >
                       {stat.value}
-                    </p>
+                    </motion.p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {stat.label}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </CollapsibleContent>
@@ -246,6 +266,14 @@ export default function Dashboard() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             showFilters={!isMobile || isStatsExpanded}
+          />
+        ) : activeView === "board" ? (
+          <ApplicationBoard
+            applications={applications}
+            onAdd={handleAdd}
+            onView={handleView}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
           />
         ) : (
           <CalendarView
