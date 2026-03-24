@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Check } from "lucide-react";
 import { Application, ApplicationStatus, STATUS_LABELS } from "@/types/application";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -14,18 +14,18 @@ interface ApplicationBoardProps {
   onView: (app: Application) => void;
   onEdit: (app: Application) => void;
   onDelete: (id: string) => void;
+  onCompleteDate?: (app: Application) => void;
 }
 
 const COLUMNS: ApplicationStatus[] = [
-  "basvuruldu",
-  "online_degerlendirme",
-  "ik_mulakati",
-  "teknik_degerlendirme",
   "kabul",
+  "ik_mulakati",
+  "online_degerlendirme",
+  "basvuruldu",
   "reddedildi"
 ];
 
-export default function ApplicationBoard({ applications, onView, onEdit, onDelete }: ApplicationBoardProps) {
+export default function ApplicationBoard({ applications, onView, onEdit, onDelete, onCompleteDate }: ApplicationBoardProps) {
   const getDomain = (url: string | null) => {
     if (!url) return null;
     try {
@@ -38,14 +38,14 @@ export default function ApplicationBoard({ applications, onView, onEdit, onDelet
   return (
     <div className="flex gap-4 overflow-x-auto pb-6 h-full snap-x">
       {COLUMNS.map((status) => {
-        const columnApps = applications.filter((app) => app.status === status);
+        const columnApps = applications.filter((app) => app.status === status && !app.is_archived);
         
         return (
           <div key={status} className="flex-shrink-0 w-[300px] bg-muted/30 rounded-xl border border-border flex flex-col snap-center max-h-[70vh]">
             {/* Column Header */}
             <div className="p-3 border-b border-border flex items-center justify-between bg-card rounded-t-xl">
               <div className="flex items-center gap-2">
-                <StatusBadge status={status} className="bg-transparent border-none px-1" />
+                <StatusBadge status={status as ApplicationStatus} className="bg-transparent border-none px-1" />
                 <span className="bg-muted px-2 py-0.5 rounded-full text-xs font-medium text-muted-foreground">
                   {columnApps.length}
                 </span>
@@ -111,15 +111,26 @@ export default function ApplicationBoard({ applications, onView, onEdit, onDelet
                     </div>
 
                     <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
-                       <span className="flex items-center gap-1.5 font-medium">
+                        <span className="flex items-center gap-1.5 font-medium group/date">
                          {app.important_date ? (
                             <>
-                                {format(new Date(app.important_date), "d MMM", { locale: tr })}
+                                {format(new Date(app.important_date), "d MMM" + (format(new Date(app.important_date), "HH:mm") !== "00:00" ? " HH:mm" : ""), { locale: tr })}
                                 {(new Date(app.important_date).getTime() - Date.now() < 24 * 60 * 60 * 1000 * 3) && (new Date(app.important_date).getTime() > Date.now()) && (
                                     <span className="relative flex h-2 w-2">
                                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                                       <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
                                     </span>
+                                )}
+                                {onCompleteDate && (
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-7 w-7 rounded-full border-success/30 text-success hover:bg-success/10 hover:border-success/50 opacity-0 group-hover/date:opacity-100 transition-all shadow-sm ml-1"
+                                    onClick={(e) => { e.stopPropagation(); onCompleteDate(app); }}
+                                    title="Tamamlandı"
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </Button>
                                 )}
                             </>
                          ) : "—"}

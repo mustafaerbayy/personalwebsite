@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Plus, Upload, FileText, Download, Trash2, Eye, Pencil, ExternalLink } from "lucide-react";
+import { X, Plus, Upload, FileText, Download, Trash2, Eye, Pencil, ExternalLink, Archive, ArchiveRestore, Clock, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
+
 import { Application, ApplicationStatus, STATUS_LABELS, REMIND_BEFORE_OPTIONS, ApplicationFile } from "@/types/application";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +25,7 @@ interface ApplicationDrawerProps {
   application?: Application | null;
   onSave: (data: any) => any;
   onDelete?: (id: string) => void;
+  onArchive?: (app: Application) => void;
   isReadOnly?: boolean;
   onEdit?: () => void;
 }
@@ -35,6 +36,7 @@ export default function ApplicationDrawer({
   application,
   onSave,
   onDelete,
+  onArchive,
   isReadOnly = false,
   onEdit,
 }: ApplicationDrawerProps) {
@@ -56,6 +58,7 @@ export default function ApplicationDrawer({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [reminders, setReminders] = useState<string[]>([]);
+  const [importantTime, setImportantTime] = useState("");
 
   useEffect(() => {
     if (application) {
@@ -63,13 +66,18 @@ export default function ApplicationDrawer({
         institution_name: application.institution_name,
         program_name: application.program_name,
         department_names: (application as any).department_names || [],
-        status: application.status,
+        status: application.status as ApplicationStatus,
         notes: application.notes || "",
         website_url: application.website_url || "",
         important_date: application.important_date ? new Date(application.important_date) : null,
         important_date_label: application.important_date_label || "",
         applied_date: (application as any).applied_date ? new Date((application as any).applied_date) : null,
       });
+      if (application.important_date) {
+        setImportantTime(format(new Date(application.important_date), "HH:mm"));
+      } else {
+        setImportantTime("");
+      }
       loadFiles(application.id);
       loadReminders(application.id);
     } else {
@@ -84,6 +92,7 @@ export default function ApplicationDrawer({
         important_date_label: "",
         applied_date: new Date(),
       });
+      setImportantTime("");
       setFiles([]);
       setPendingFiles([]);
       setReminders(["1_week", "3_days", "2_days", "1_day"]);
@@ -119,7 +128,14 @@ export default function ApplicationDrawer({
         status: formData.status,
         notes: formData.notes || null,
         website_url: formData.website_url || null,
-        important_date: formData.important_date?.toISOString() || null,
+        important_date: formData.important_date ? (() => {
+          const d = new Date(formData.important_date);
+          if (importantTime) {
+            const [h, m] = importantTime.split(":").map(Number);
+            d.setHours(h, m, 0, 0);
+          }
+          return d.toISOString();
+        })() : null,
         important_date_label: formData.important_date_label || null,
         applied_date: formData.applied_date?.toISOString() || null,
       });
@@ -500,35 +516,57 @@ export default function ApplicationDrawer({
             <div className="space-y-2">
               <Label>Önemli Tarih</Label>
               {isReadOnly ? (
-                <div className="flex items-center gap-2 py-1 text-sm text-foreground">
-                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                  {formData.important_date ? format(formData.important_date, "dd MMMM yyyy", { locale: tr }) : "Seçilmemiş"}
+                <div className="flex flex-col gap-1 py-1">
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    {formData.important_date ? format(formData.important_date, "dd MMMM yyyy", { locale: tr }) : "Seçilmemiş"}
+                  </div>
+                  {importantTime && (
+                    <div className="flex items-center gap-2 text-sm text-foreground">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      Saat: {importantTime}
+                    </div>
+                  )}
                 </div>
               ) : (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !formData.important_date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.important_date
-                        ? format(formData.important_date, "dd/MM/yyyy")
-                        : "Tarih seç"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.important_date || undefined}
-                      onSelect={(d) => setFormData({ ...formData, important_date: d || null })}
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <div className="space-y-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !formData.important_date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.important_date
+                          ? format(formData.important_date, "dd/MM/yyyy")
+                          : "Tarih seç"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.important_date || undefined}
+                        onSelect={(d) => setFormData({ ...formData, important_date: d || null })}
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  
+                  {formData.important_date && (
+                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <Input
+                        type="time"
+                        value={importantTime}
+                        onChange={(e) => setImportantTime(e.target.value)}
+                        className="h-8 py-1 text-xs"
+                      />
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             <div className="space-y-2">
@@ -643,6 +681,30 @@ export default function ApplicationDrawer({
                   İptal
                 </Button>
               </div>
+
+              {application && onArchive && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    onArchive(application);
+                    onClose();
+                  }}
+                >
+                  {application.is_archived ? (
+                    <>
+                      <ArchiveRestore className="h-4 w-4" />
+                      Arşivden Çıkar
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="h-4 w-4" />
+                      Başvuruyu Arşivle
+                    </>
+                  )}
+                </Button>
+              )}
 
               {application && onDelete && (
                 <Button

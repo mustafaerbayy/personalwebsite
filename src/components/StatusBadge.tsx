@@ -2,12 +2,14 @@ import { cn } from "@/lib/utils";
 import { ApplicationStatus, STATUS_LABELS, STATUS_STYLES } from "@/types/application";
 
 interface StatusBadgeProps {
-  status: ApplicationStatus;
+  status: string;
   className?: string;
 }
 
 export default function StatusBadge({ status, className }: StatusBadgeProps) {
-  const style = STATUS_STYLES[status] || STATUS_STYLES.basvuruldu;
+  const currentStatus = status as ApplicationStatus;
+  const style = STATUS_STYLES[currentStatus] || STATUS_STYLES.basvuruldu;
+  const label = STATUS_LABELS[currentStatus] || "Bilinmiyor";
 
   return (
     <span
@@ -18,7 +20,7 @@ export default function StatusBadge({ status, className }: StatusBadgeProps) {
       )}
     >
       <span className={cn("h-1.5 w-1.5 rounded-full", style.dot)} />
-      {STATUS_LABELS[status]}
+      {label}
     </span>
   );
 }

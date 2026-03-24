@@ -23,7 +23,7 @@ export default function CalendarView({ applications, onSelectApp }: CalendarView
   const appsByDate = useMemo(() => {
     const map: Record<string, Application[]> = {};
     applications.forEach((app) => {
-      if (app.important_date) {
+      if (app.important_date && !app.is_archived) {
         const key = format(new Date(app.important_date), "yyyy-MM-dd");
         if (!map[key]) map[key] = [];
         map[key].push(app);

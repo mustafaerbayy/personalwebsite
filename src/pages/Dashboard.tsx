@@ -84,14 +84,59 @@ export default function Dashboard() {
     }
   };
 
+  const handleArchive = async (app: Application) => {
+    const isArchived = !app.is_archived;
+    await updateApplication.mutateAsync({
+      id: app.id,
+      is_archived: isArchived,
+      archived_at: isArchived ? new Date().toISOString() : null,
+    } as any);
+  };
+
+  const handleCompleteDate = async (app: Application) => {
+    if (!app.important_date) return;
+    
+    const historyItem = {
+      date: app.important_date,
+      label: app.important_date_label || "",
+      status: app.status,
+      completed_at: new Date().toISOString()
+    };
+    
+    const currentHistory = Array.isArray(app.date_history) ? app.date_history : [];
+    
+    await updateApplication.mutateAsync({
+      id: app.id,
+      important_date: null,
+      important_date_label: null,
+      date_history: [...currentHistory, historyItem]
+    } as any);
+  };
+
+  const handleRevertDate = async (app: Application, indexToRevert: number) => {
+    if (!app.date_history || !Array.isArray(app.date_history)) return;
+    if (indexToRevert < 0 || indexToRevert >= app.date_history.length) return;
+    
+    const historyList = [...app.date_history];
+    const itemToRevert = historyList.splice(indexToRevert, 1)[0] as any;
+    
+    await updateApplication.mutateAsync({
+      id: app.id,
+      important_date: itemToRevert.date,
+      important_date_label: itemToRevert.label,
+      status: itemToRevert.status,
+      date_history: historyList
+    } as any);
+  };
+
   // Stats
   const totalApps = applications.length;
   const activeApps = applications.filter(
-    (a) => !["kabul", "reddedildi"].includes(a.status)
+    (a) => !["kabul", "reddedildi"].includes(a.status) && !a.is_archived
   ).length;
-  const acceptedApps = applications.filter((a) => a.status === "kabul").length;
+  const acceptedApps = applications.filter((a) => a.status === "kabul" && !a.is_archived).length;
   const rejectedApps = applications.filter(
-    (a) => a.status === "reddedildi"
+    (a) => a.status === "reddedildi" && !a.is_archived
   ).length;
 
   const stats = [
@@ -265,6 +310,7 @@ export default function Dashboard() {
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onCompleteDate={handleCompleteDate}
             showFilters={!isMobile || isStatsExpanded}
           />
         ) : activeView === "board" ? (
@@ -274,6 +320,7 @@ export default function Dashboard() {
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onCompleteDate={handleCompleteDate}
           />
         ) : (
           <CalendarView
@@ -289,6 +336,7 @@ export default function Dashboard() {
         application={editingApp}
         onSave={handleSave}
         onDelete={handleDelete}
+        onArchive={handleArchive}
         isReadOnly={isReadOnly}
         onEdit={() => setIsReadOnly(false)}
       />
@@ -298,6 +346,8 @@ export default function Dashboard() {
         onClose={() => setDetailsOpen(false)}
         application={editingApp}
         onEdit={handleEdit}
+        onCompleteDate={handleCompleteDate}
+        onRevertDate={handleRevertDate}
       />
     </div>
   );

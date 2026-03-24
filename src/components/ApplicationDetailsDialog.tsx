@@ -7,7 +7,11 @@ import {
   CalendarIcon,
   FileText,
   Eye,
-  Download
+  Download,
+  Check,
+  History,
+  RotateCcw,
+  Clock
 } from "lucide-react";
 import {
   Dialog,
@@ -35,6 +39,8 @@ interface ApplicationDetailsDialogProps {
   onClose: () => void;
   application: Application | null;
   onEdit: (app: Application) => void;
+  onCompleteDate?: (app: Application) => void;
+  onRevertDate?: (app: Application, historyIndex: number) => void;
 }
 
 export default function ApplicationDetailsDialog({
@@ -42,6 +48,8 @@ export default function ApplicationDetailsDialog({
   onClose,
   application,
   onEdit,
+  onCompleteDate,
+  onRevertDate,
 }: ApplicationDetailsDialogProps) {
   const [files, setFiles] = useState<ApplicationFile[]>([]);
   const [reminders, setReminders] = useState<string[]>([]);
@@ -185,11 +193,23 @@ export default function ApplicationDetailsDialog({
               </div>
               <div className="space-y-1.5">
                 <Label className="text-muted-foreground">Önemli Tarih</Label>
-                <div className="flex items-center gap-2 text-sm text-foreground font-medium">
+                <div className="flex items-center gap-2 text-sm text-foreground font-medium group/date">
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                   {application.important_date
-                    ? format(new Date(application.important_date), "dd MMMM yyyy", { locale: tr })
+                    ? format(new Date(application.important_date), "dd MMMM yyyy" + (format(new Date(application.important_date), "HH:mm") !== "00:00" ? " HH:mm" : ""), { locale: tr })
                     : "—"}
+
+                  {application.important_date && onCompleteDate && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover/date:opacity-100 transition-opacity text-success hover:text-success hover:bg-success/10 ml-auto"
+                      onClick={() => onCompleteDate(application)}
+                      title="Tarihi Tamamla"
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -223,6 +243,52 @@ export default function ApplicationDetailsDialog({
                 {application.notes || "Henüz not eklenmemiş."}
               </div>
             </div>
+
+            {application.date_history && Array.isArray(application.date_history) && application.date_history.length > 0 && (
+              <div className="space-y-2 mt-4">
+                <Label className="text-muted-foreground flex items-center gap-1.5">
+                  <History className="h-4 w-4" />
+                  Başvuru Tarihçesi
+                </Label>
+                <div className="space-y-2.5">
+                  {[...application.date_history].reverse().map((historyItem: any, i: number) => {
+                    const originalIndex = application.date_history!.length - 1 - i;
+                    return (
+                      <div key={i} className="bg-card p-3 rounded-lg border border-border text-sm flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-foreground">
+                            {format(new Date(historyItem.date), "dd MMMM yyyy" + (format(new Date(historyItem.date), "HH:mm") !== "00:00" ? " HH:mm" : ""), { locale: tr })}
+                          </span>
+                          <StatusBadge status={historyItem.status} />
+                        </div>
+                        {historyItem.label && (
+                          <p className="text-muted-foreground text-xs">{historyItem.label}</p>
+                        )}
+                        <div className="flex items-center justify-between mt-1 pt-1 border-t border-border/50">
+                          <span className="text-[10px] text-muted-foreground/60">
+                            Tamamlandı: {format(new Date(historyItem.completed_at), "dd MMM HH:mm", { locale: tr })}
+                          </span>
+                          {onRevertDate && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+                              onClick={() => {
+                                onRevertDate(application, originalIndex);
+                                onClose();
+                              }}
+                            >
+                              <RotateCcw className="h-2.5 w-2.5 mr-1" />
+                              Geri Al
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

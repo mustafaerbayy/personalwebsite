@@ -71,6 +71,9 @@ export type Database = {
           updated_at: string
           user_id: string
           website_url: string | null
+          date_history: Json[] | null
+          is_archived: boolean | null
+          archived_at: string | null
         }
         Insert: {
           applied_date?: string | null
@@ -87,6 +90,9 @@ export type Database = {
           updated_at?: string
           user_id: string
           website_url?: string | null
+          date_history?: Json[] | null
+          is_archived?: boolean | null
+          archived_at?: string | null
         }
         Update: {
           applied_date?: string | null
@@ -103,6 +109,9 @@ export type Database = {
           updated_at?: string
           user_id?: string
           website_url?: string | null
+          date_history?: Json[] | null
+          is_archived?: boolean | null
+          archived_at?: string | null
         }
         Relationships: []
       }
