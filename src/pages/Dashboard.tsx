@@ -22,6 +22,7 @@ import {
   Search,
   Filter,
   Kanban,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const isMobile = useIsMobile();
@@ -51,6 +54,34 @@ export default function Dashboard() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<Application | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
+
+  const handleTestEmail = async () => {
+    try {
+      toast.info("Hatırlatıcılar taranıyor...");
+      const { data, error } = await supabase.functions.invoke("send-reminders", {
+        body: { action: "manual_test" }
+      });
+
+      if (error) throw error;
+
+      if (data?.message) {
+        toast.info(data.message);
+      } else if (data?.success) {
+        toast.success(`E-postalar başarıyla yollandı! (${data.count} başvuru)`);
+      }
+      console.log("Reminders response:", data);
+    } catch (error: any) {
+      console.error("Test email error details:", error);
+      let errorMessage = error.message || "Hatırlatıcı isteği başarısız oldu.";
+
+      // Try to get specific error message from function response
+      if (error.context && error.context.json && error.context.json.error) {
+        errorMessage = error.context.json.error;
+      }
+
+      toast.error(`Hata: ${errorMessage}`);
+    }
+  };
 
   const handleAdd = () => {
     setEditingApp(null);
@@ -95,16 +126,16 @@ export default function Dashboard() {
 
   const handleCompleteDate = async (app: Application) => {
     if (!app.important_date) return;
-    
+
     const historyItem = {
       date: app.important_date,
       label: app.important_date_label || "",
       status: app.status,
       completed_at: new Date().toISOString()
     };
-    
+
     const currentHistory = Array.isArray(app.date_history) ? app.date_history : [];
-    
+
     await updateApplication.mutateAsync({
       id: app.id,
       important_date: null,
@@ -116,10 +147,10 @@ export default function Dashboard() {
   const handleRevertDate = async (app: Application, indexToRevert: number) => {
     if (!app.date_history || !Array.isArray(app.date_history)) return;
     if (indexToRevert < 0 || indexToRevert >= app.date_history.length) return;
-    
+
     const historyList = [...app.date_history];
     const itemToRevert = historyList.splice(indexToRevert, 1)[0] as any;
-    
+
     await updateApplication.mutateAsync({
       id: app.id,
       important_date: itemToRevert.date,
@@ -217,6 +248,10 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button onClick={handleTestEmail} variant="outline" size="sm" className="gap-1.5 hidden sm:flex text-primary hover:text-primary border-primary/20 hover:bg-primary/10">
+              <Mail className="h-3.5 w-3.5" />
+              <span>Durum Raporu Gönder</span>
+            </Button>
             <Button onClick={handleAdd} size="sm" className="gap-1.5">
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Yeni Başvuru</span>
@@ -280,7 +315,7 @@ export default function Dashboard() {
                     <stat.icon className="h-5 w-5" />
                   </div>
                   <div className="relative z-10">
-                    <motion.p 
+                    <motion.p
                       initial={{ scale: 0.5, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ delay: i * 0.1 + 0.2, type: "spring" }}
