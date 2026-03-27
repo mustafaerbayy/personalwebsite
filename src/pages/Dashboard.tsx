@@ -211,18 +211,18 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       {/* Top navbar */}
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-4 sm:px-6">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-2 sm:px-6">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 sm:h-8 sm:w-8"
               onClick={() => navigate("/")}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-xs font-bold text-primary-foreground">ME</span>
+            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-[10px] sm:text-xs font-bold text-primary-foreground">ME</span>
             </div>
             <span className="font-display font-semibold text-foreground hidden sm:inline">
               Mustafa Erbay
@@ -235,36 +235,36 @@ export default function Dashboard() {
                 key={item.id}
                 onClick={() => setActiveView(item.id)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+                  "flex items-center rounded-md px-2 py-1.5 sm:px-3 text-sm font-medium transition-all sm:gap-1.5",
                   activeView === item.id
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <item.icon className="h-3.5 w-3.5" />
-                {item.label}
+                <item.icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                <span className="hidden sm:inline">{item.label}</span>
               </button>
             ))}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button onClick={handleTestEmail} variant="outline" size="sm" className="gap-1.5 hidden sm:flex text-primary hover:text-primary border-primary/20 hover:bg-primary/10">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button onClick={handleTestEmail} variant="outline" size="sm" className="sm:gap-1.5 flex text-primary hover:text-primary border-primary/20 hover:bg-primary/10 h-8 w-8 sm:h-9 sm:w-auto px-0 sm:px-3">
               <Mail className="h-3.5 w-3.5" />
-              <span>Durum Raporu Gönder</span>
+              <span className="hidden sm:inline">Durum Raporu Gönder</span>
             </Button>
-            <Button onClick={handleAdd} size="sm" className="gap-1.5">
+            <Button onClick={handleAdd} size="sm" className="sm:gap-1.5 h-8 w-8 sm:h-9 sm:w-auto px-0 sm:px-3">
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Yeni Başvuru</span>
             </Button>
-            <ThemeToggle className="h-8 w-8" />
+            <ThemeToggle className="h-7 w-7 sm:h-8 sm:w-8" />
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-foreground"
               onClick={signOut}
               title="Çıkış Yap"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>
