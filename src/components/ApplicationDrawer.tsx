@@ -95,9 +95,9 @@ export default function ApplicationDrawer({
       setImportantTime("");
       setFiles([]);
       setPendingFiles([]);
-      setReminders(["1_week", "3_days", "2_days", "1_day"]);
+      setReminders(REMIND_BEFORE_OPTIONS.map(opt => opt.value));
     }
-  }, [application]);
+  }, [application, open]);
 
   const loadFiles = async (appId: string) => {
     const { data } = await supabase
@@ -185,7 +185,7 @@ export default function ApplicationDrawer({
         });
         setFiles([]);
         setPendingFiles([]);
-        setReminders(["1_week", "3_days", "2_days", "1_day"]);
+        setReminders(REMIND_BEFORE_OPTIONS.map(opt => opt.value));
         setNewDeptName("");
       }
 
@@ -549,7 +549,22 @@ export default function ApplicationDrawer({
                       <Calendar
                         mode="single"
                         selected={formData.important_date || undefined}
-                        onSelect={(d) => setFormData({ ...formData, important_date: d || null })}
+                        onSelect={(d) => {
+                          if (d) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              important_date: d,
+                              important_date_label: prev.important_date_label || "Sınav",
+                            }));
+                            if (!importantTime) setImportantTime("23:59");
+                            if (reminders.length === 0) {
+                              setReminders(REMIND_BEFORE_OPTIONS.map(opt => opt.value));
+                            }
+                          } else {
+                            setFormData((prev) => ({ ...prev, important_date: null }));
+                            setImportantTime("");
+                          }
+                        }}
                         className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>

@@ -19,6 +19,8 @@ interface ApplicationListProps {
   onDelete: (id: string) => void;
   onCompleteDate?: (app: Application) => void;
   showFilters?: boolean;
+  searchQuery?: string;
+  onSearchChange?: (val: string) => void;
 }
 
 type SortKey = "institution_name" | "status" | "important_date" | "created_at";
@@ -31,10 +33,17 @@ export default function ApplicationList({
   onEdit,
   onDelete,
   onCompleteDate,
-  showFilters = true
+  showFilters = true,
+  searchQuery = "",
+  onSearchChange
 }: ApplicationListProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [search, setSearch] = useState("");
+  const [localSearch, setLocalSearch] = useState("");
+  const search = onSearchChange ? searchQuery : localSearch;
+  const handleSearchChange = (val: string) => {
+    if (onSearchChange) onSearchChange(val);
+    else setLocalSearch(val);
+  };
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
@@ -328,7 +337,7 @@ export default function ApplicationList({
             <Input
               placeholder="Kurum veya program ara..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9 bg-card"
             />
           </div>

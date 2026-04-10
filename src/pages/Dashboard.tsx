@@ -54,6 +54,13 @@ export default function Dashboard() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<Application | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (!drawerOpen && !detailsOpen) {
+      setSearchQuery("");
+    }
+  }, [drawerOpen, detailsOpen]);
 
   const handleTestEmail = async () => {
     try {
@@ -347,6 +354,8 @@ export default function Dashboard() {
             onDelete={handleDelete}
             onCompleteDate={handleCompleteDate}
             showFilters={!isMobile || isStatsExpanded}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
           />
         ) : activeView === "board" ? (
           <ApplicationBoard
