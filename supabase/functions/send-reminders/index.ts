@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
           </div>
           <p>Başarılar dileriz!</p>
           <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 30px 0;"/>
-          <small style="color: #9ca3af; display: block; text-align: center;">Bu e-posta Mustafa Erbay Başvuru Takip sistemi tarafından oluşturulmuştur.</small>
+          <small style="color: #9ca3af; display: block; text-align: center;">Bu e-posta Başvuru Takip sistemi tarafından oluşturulmuştur.</small>
         </div>
       `;
 
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
         body: JSON.stringify({
-          from: "Mustafa Erbay <info@mustafaerbay.online>",
+          from: "Başvuru Takip <info@mustafaerbay.online>",
           to: [user.email],
           subject: `Başvuru Durum Raporu: ${apps.length} Başvuru için İşlem Gerekiyor`,
           html: emailHtml,

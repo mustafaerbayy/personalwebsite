@@ -124,9 +124,34 @@
   body {
     @apply bg-background text-foreground font-body antialiased;
     font-family: var(--font-body);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4 {
     font-family: var(--font-display);
   }
 }
+
+@layer utilities {
+  /* Safe area bottom padding for iOS */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Hide scrollbar but allow scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Smooth momentum scrolling for touch */
+  .scroll-smooth-touch {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+

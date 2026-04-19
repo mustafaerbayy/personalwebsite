@@ -1,9 +1,10 @@
 import { useAuth } from "@/hooks/useAuth";
 import LoginPage from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
+import UpdatePasswordPage from "@/pages/UpdatePassword";
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, needsPasswordReset } = useAuth();
 
   if (loading) {
     return (
@@ -14,6 +15,8 @@ const Index = () => {
   }
 
   if (!user) return <LoginPage />;
+
+  if (needsPasswordReset) return <UpdatePasswordPage />;
 
   return <Dashboard />;
 };

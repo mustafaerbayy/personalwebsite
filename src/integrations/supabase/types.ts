@@ -160,6 +160,36 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          id: string
+          full_name: string | null
+          avatar_url: string | null
+          phone: string | null
+          bio: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          full_name?: string | null
+          avatar_url?: string | null
+          phone?: string | null
+          bio?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          phone?: string | null
+          bio?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reminders: {
         Row: {
           application_id: string
@@ -203,7 +233,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_deleted_email: {
+        Args: {
+          check_email: string
+        }
+        Returns: {
+          is_blocked: boolean
+          cooldown_remaining: string
+        }[]
+      }
     }
     Enums: {
       application_status:

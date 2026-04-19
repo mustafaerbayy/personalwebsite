@@ -347,404 +347,442 @@ export default function ApplicationDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-foreground/20" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-card shadow-xl animate-slide-in-right overflow-y-auto">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-4">
-          <h2 className="font-display font-semibold text-foreground">
+      <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm cursor-pointer transition-opacity" onClick={onClose} />
+      <div className="relative w-full sm:max-w-md md:max-w-lg h-[100dvh] bg-card shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 flex flex-col sm:h-screen">
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-card/95 backdrop-blur-md px-4 sm:px-6 py-4">
+          <h2 className="font-display font-semibold text-lg text-foreground">
             {application ? "Başvuru Düzenle" : "Yeni Başvuru"}
           </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full bg-muted/50 hover:bg-muted transition-colors">
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          <div className="space-y-2">
-            <Label>Durum</Label>
-            {isReadOnly ? (
-              <div className="py-2">
-                <StatusBadge status={formData.status} />
-              </div>
-            ) : (
-              <Select
-                value={formData.status}
-                onValueChange={(v) => setFormData({ ...formData, status: v as ApplicationStatus })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Kurum Adı</Label>
-            {isReadOnly ? (
-              <p className="text-foreground font-medium py-1">{formData.institution_name}</p>
-            ) : (
-              <Input
-                value={formData.institution_name}
-                onChange={(e) => setFormData({ ...formData, institution_name: e.target.value })}
-                required
-              />
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Program Adı</Label>
-            {isReadOnly ? (
-              <p className="text-foreground py-1">{formData.program_name}</p>
-            ) : (
-              <Input
-                value={formData.program_name}
-                onChange={(e) => setFormData({ ...formData, program_name: e.target.value })}
-                required
-              />
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Başvurulan Departmanlar</Label>
-            <div className="space-y-2">
-              {formData.department_names.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {formData.department_names.map((name) => (
-                    <span
-                      key={name}
-                      className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs font-medium text-foreground"
-                    >
-                      {name}
-                      {!isReadOnly && (
-                        <button
-                          type="button"
-                          onClick={() => removeDepartment(name)}
-                          className="text-muted-foreground hover:text-destructive transition-colors"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </span>
-                  ))}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scroll-smooth-touch">
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Durum</Label>
+              {isReadOnly ? (
+                <div className="py-2">
+                  <StatusBadge status={formData.status} />
                 </div>
-              ) : isReadOnly ? (
-                <p className="text-muted-foreground text-sm italic py-1">Departman eklenmemiş</p>
-              ) : null}
-              {!isReadOnly && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Departman adı..."
-                    value={newDeptName}
-                    onChange={(e) => setNewDeptName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDepartment(); } }}
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="outline" size="sm" onClick={addDepartment}>
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Web Sitesi</Label>
-            {isReadOnly ? (
-              formData.website_url ? (
-                <a
-                  href={formData.website_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline flex items-center gap-1.5 py-1 text-sm"
+              ) : (
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => setFormData({ ...formData, status: v as ApplicationStatus })}
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  {formData.website_url}
-                </a>
-              ) : (
-                <p className="text-muted-foreground text-sm italic py-1">Eklenmemiş</p>
-              )
-            ) : (
-              <Input
-                type="url"
-                value={formData.website_url}
-                onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
-                placeholder="https://..."
-              />
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Başvuru Tarihi</Label>
-            {isReadOnly ? (
-              <div className="flex items-center gap-2 py-1 text-sm text-foreground">
-                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                {formData.applied_date ? format(formData.applied_date, "dd MMMM yyyy", { locale: tr }) : "Tarih seçilmemiş"}
-              </div>
-            ) : (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.applied_date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.applied_date
-                      ? format(formData.applied_date, "dd/MM/yyyy")
-                      : "Tarih seç"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.applied_date || undefined}
-                    onSelect={(d) => setFormData({ ...formData, applied_date: d || null })}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Önemli Tarih</Label>
-              {isReadOnly ? (
-                <div className="flex flex-col gap-1 py-1">
-                  <div className="flex items-center gap-2 text-sm text-foreground">
-                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                    {formData.important_date ? format(formData.important_date, "dd MMMM yyyy", { locale: tr }) : "Seçilmemiş"}
-                  </div>
-                  {importantTime && (
-                    <div className="flex items-center gap-2 text-sm text-foreground">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      Saat: {importantTime}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.important_date && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.important_date
-                          ? format(formData.important_date, "dd/MM/yyyy")
-                          : "Tarih seç"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.important_date || undefined}
-                        onSelect={(d) => {
-                          if (d) {
-                            setFormData((prev) => ({
-                              ...prev,
-                              important_date: d,
-                              important_date_label: prev.important_date_label || "Sınav",
-                            }));
-                            if (!importantTime) setImportantTime("23:59");
-                            if (reminders.length === 0) {
-                              setReminders(REMIND_BEFORE_OPTIONS.map(opt => opt.value));
-                            }
-                          } else {
-                            setFormData((prev) => ({ ...prev, important_date: null }));
-                            setImportantTime("");
-                          }
-                        }}
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  
-                  {formData.important_date && (
-                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                      <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <Input
-                        type="time"
-                        value={importantTime}
-                        onChange={(e) => setImportantTime(e.target.value)}
-                        className="h-8 py-1 text-xs"
-                      />
-                    </div>
-                  )}
-                </div>
+                  <SelectTrigger className="h-12 bg-muted/50 focus:bg-background transition-colors text-base sm:text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key} className="py-2.5 sm:py-1.5">{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
-            <div className="space-y-2">
-              <Label>Tarih Açıklaması</Label>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Kurum Adı</Label>
               {isReadOnly ? (
-                <p className="text-foreground py-1 text-sm">{formData.important_date_label || "Açıklama yok"}</p>
+                <p className="text-foreground font-medium py-1">{formData.institution_name}</p>
               ) : (
                 <Input
-                  value={formData.important_date_label}
-                  onChange={(e) => setFormData({ ...formData, important_date_label: e.target.value })}
-                  placeholder="ör. Mülakat, Sınav"
+                  className="h-12 bg-muted/50 focus:bg-background transition-colors text-base sm:text-sm"
+                  value={formData.institution_name}
+                  onChange={(e) => setFormData({ ...formData, institution_name: e.target.value })}
+                  placeholder="Şirket veya Kurum Adı"
+                  required
                 />
               )}
             </div>
-          </div>
 
-          {formData.important_date && (
-            <div className="space-y-2">
-              <Label>Hatırlatıcılar</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {REMIND_BEFORE_OPTIONS.map((opt) => (
-                  <label key={opt.value} className={cn("flex items-center gap-1.5 text-sm", isReadOnly && "opacity-80 pointer-events-none")}>
-                    <Checkbox
-                      checked={reminders.includes(opt.value)}
-                      onCheckedChange={() => !isReadOnly && toggleReminder(opt.value)}
-                      disabled={isReadOnly}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Program Adı</Label>
+              {isReadOnly ? (
+                <p className="text-foreground py-1">{formData.program_name}</p>
+              ) : (
+                <Input
+                  className="h-12 bg-muted/50 focus:bg-background transition-colors text-base sm:text-sm"
+                  value={formData.program_name}
+                  onChange={(e) => setFormData({ ...formData, program_name: e.target.value })}
+                  placeholder="Program veya Pozisyon"
+                  required
+                />
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Başvurulan Departmanlar</Label>
+              <div className="space-y-3">
+                {formData.department_names.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.department_names.map((name) => (
+                      <span
+                        key={name}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/20 px-2.5 py-1.5 text-[13px] font-medium text-primary"
+                      >
+                        {name}
+                        {!isReadOnly && (
+                          <button
+                            type="button"
+                            onClick={() => removeDepartment(name)}
+                            className="text-primary/70 hover:text-primary transition-colors bg-primary/10 rounded-full p-0.5"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                ) : isReadOnly ? (
+                  <p className="text-muted-foreground text-sm italic py-1 bg-muted/30 p-3 rounded-lg border border-dashed border-border/50 text-center">Departman eklenmemiş</p>
+                ) : null}
+                {!isReadOnly && (
+                  <div className="flex gap-2 relative">
+                    <Input
+                      placeholder="Departman adı ekle..."
+                      value={newDeptName}
+                      onChange={(e) => setNewDeptName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDepartment(); } }}
+                      className="flex-1 h-12 bg-muted/50 focus:bg-background transition-colors text-base sm:text-sm pr-12"
                     />
-                    {opt.label}
-                  </label>
-                ))}
+                    <Button type="button" size="icon" onClick={addDepartment} className="absolute right-1 top-1 bottom-1 h-10 w-10 shrink-0">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label>Notlar</Label>
-            {isReadOnly ? (
-              <div className="bg-muted p-3 rounded-md min-h-[50px] whitespace-pre-wrap text-sm text-foreground">
-                {formData.notes || "Not bulunmuyor."}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Web Sitesi</Label>
+              {isReadOnly ? (
+                formData.website_url ? (
+                  <a
+                    href={formData.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline flex items-center gap-1.5 py-2 px-3 bg-primary/5 rounded-lg border border-primary/10 text-sm font-medium w-fit"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    {formData.website_url}
+                  </a>
+                ) : (
+                  <p className="text-muted-foreground text-sm italic py-1">Eklenmemiş</p>
+                )
+              ) : (
+                <Input
+                  type="url"
+                  className="h-12 bg-muted/50 focus:bg-background transition-colors text-base sm:text-sm"
+                  value={formData.website_url}
+                  onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+                  placeholder="https://..."
+                />
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Başvuru Tarihi</Label>
+              {isReadOnly ? (
+                <div className="flex items-center gap-2 py-2 px-3 bg-muted/50 rounded-lg border border-border text-sm text-foreground font-medium w-fit">
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                  {formData.applied_date ? format(formData.applied_date, "dd MMMM yyyy", { locale: tr }) : "Tarih seçilmemiş"}
+                </div>
+              ) : (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-12 bg-muted/50 focus:bg-background transition-colors text-base sm:text-sm",
+                        !formData.applied_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                      {formData.applied_date
+                        ? format(formData.applied_date, "dd MMMM yyyy", { locale: tr })
+                        : "Tarih seç"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.applied_date || undefined}
+                      onSelect={(d) => setFormData({ ...formData, applied_date: d || null })}
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Önemli Tarih</Label>
+                {isReadOnly ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 py-2 px-3 bg-muted/50 rounded-lg border border-border text-sm text-foreground font-medium w-fit">
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      {formData.important_date ? format(formData.important_date, "dd MMMM yyyy", { locale: tr }) : "Seçilmemiş"}
+                    </div>
+                    {importantTime && formData.important_date && (
+                      <div className="flex items-center gap-2 py-2 px-3 bg-muted/50 rounded-lg border border-border text-sm text-foreground font-medium w-fit">
+                        <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                        Saat: {importantTime}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal h-12 bg-muted/50 focus:bg-background transition-colors text-base sm:text-sm",
+                            !formData.important_date && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                          {formData.important_date
+                            ? format(formData.important_date, "dd/MM/yyyy")
+                            : "Tarih seç"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formData.important_date || undefined}
+                          onSelect={(d) => {
+                            if (d) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                important_date: d,
+                                important_date_label: prev.important_date_label || "Sınav",
+                              }));
+                              if (!importantTime) setImportantTime("23:59");
+                              if (reminders.length === 0) {
+                                setReminders(REMIND_BEFORE_OPTIONS.map(opt => opt.value));
+                              }
+                            } else {
+                              setFormData((prev) => ({ ...prev, important_date: null }));
+                              setImportantTime("");
+                            }
+                          }}
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    
+                    {formData.important_date && (
+                      <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <Input
+                          type="time"
+                          value={importantTime}
+                          onChange={(e) => setImportantTime(e.target.value)}
+                          className="h-12 bg-muted/50 focus:bg-background text-base sm:text-sm flex-1"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Tarih Açıklaması</Label>
+                {isReadOnly ? (
+                  <p className="py-2 px-3 bg-muted/30 rounded-lg border border-border/50 text-foreground text-sm font-medium">
+                    {formData.important_date_label || "Açıklama yok"}
+                  </p>
+                ) : (
+                  <Input
+                    className="h-12 bg-muted/50 focus:bg-background transition-colors text-base sm:text-sm"
+                    value={formData.important_date_label}
+                    onChange={(e) => setFormData({ ...formData, important_date_label: e.target.value })}
+                    placeholder="ör. Mülakat, Sınav"
+                  />
+                )}
+              </div>
+            </div>
+
+            {formData.important_date && (
+              <div className="space-y-3 bg-primary/5 p-4 rounded-xl border border-primary/10">
+                <Label className="text-sm font-semibold flex items-center gap-1.5 text-primary">
+                  <Clock className="h-4 w-4" /> Hatırlatıcılar
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {REMIND_BEFORE_OPTIONS.map((opt) => (
+                    <label key={opt.value} className={cn(
+                      "flex items-center gap-2.5 text-sm p-2 rounded-lg border transition-colors",
+                      reminders.includes(opt.value) ? "bg-primary/10 border-primary/30 text-primary font-medium" : "bg-card border-border hover:bg-muted",
+                      isReadOnly && "opacity-80 pointer-events-none"
+                    )}>
+                      <Checkbox
+                        className="h-5 w-5"
+                        checked={reminders.includes(opt.value)}
+                        onCheckedChange={() => !isReadOnly && toggleReminder(opt.value)}
+                        disabled={isReadOnly}
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Notlar</Label>
+              {isReadOnly ? (
+                <div className="bg-muted/50 p-4 rounded-xl border border-border min-h-[80px] whitespace-pre-wrap text-sm text-foreground">
+                  {formData.notes || <span className="text-muted-foreground italic">Not bulunmuyor.</span>}
+                </div>
+              ) : (
+                <Textarea
+                  className="bg-muted/50 focus:bg-background transition-colors text-base sm:text-sm rounded-xl resize-none p-4"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows={4}
+                  placeholder="Ek notlar, görüşme detayları..."
+                />
+              )}
+            </div>
+
+            <div className="space-y-3 pb-6">
+              <Label className="text-sm font-semibold flex items-center justify-between">
+                <span>Dosyalar</span>
+                <span className="bg-muted px-2 py-0.5 rounded-full text-xs font-medium text-muted-foreground">{files.length + pendingFiles.length}/4</span>
+              </Label>
+              
+              <div className="space-y-2.5">
+                {files.map((file) => (
+                  <div key={file.id} className="flex items-center gap-3 rounded-xl border border-border p-3 bg-card hover:bg-muted/30 transition-colors">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{file.file_name}</p>
+                      <p className="text-xs text-muted-foreground uppercase">{file.file_type.split('/')[1]}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handlePreviewFile(file)} title="Önizle">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleDownloadFile(file)} title="İndir">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      {!isReadOnly && (
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteFile(file)} title="Sil">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {pendingFiles.map((file, index) => (
+                  <div key={`pending-${index}`} className="flex items-center gap-3 rounded-xl border border-dashed border-border p-3 bg-muted/20">
+                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate text-muted-foreground">{file.name}</p>
+                      <p className="text-xs text-primary font-medium">Kaydedilecek</p>
+                    </div>
+                    {!isReadOnly && (
+                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-destructive hover:bg-destructive/10" onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== index))} title="Sil">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+
+                {!isReadOnly && (files.length + pendingFiles.length) < 4 && (
+                  <label className="flex flex-col items-center justify-center gap-2 cursor-pointer rounded-xl border-2 border-dashed border-border/60 p-6 hover:bg-muted/30 hover:border-border transition-colors group">
+                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Upload className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground">
+                      {uploading ? "Yükleniyor..." : "Dosya Yüklemek İçin Tıklayın"}
+                    </span>
+                    <span className="text-xs text-muted-foreground/60">PDF veya Word (Maks 4 dosya)</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+                )}
+                {isReadOnly && (files.length + pendingFiles.length) === 0 && (
+                  <div className="p-8 text-center border-2 border-dashed border-border/50 rounded-xl bg-muted/20">
+                    <FileText className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground font-medium">Dosya Eklenmemiş</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="sticky bottom-0 z-20 bg-card/95 backdrop-blur-xl border-t border-border p-4 sm:p-6 safe-area-bottom shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
+            {!isReadOnly ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <Button type="submit" className="flex-1 h-12 sm:h-10 text-base sm:text-sm font-semibold shadow-lg shadow-primary/20" disabled={uploading}>
+                    {uploading ? "Kaydediliyor..." : application ? "Değişiklikleri Kaydet" : "Başvuruyu Oluştur"}
+                  </Button>
+                  <Button type="button" variant="outline" className="flex-1 h-12 sm:h-10 text-base sm:text-sm bg-card" onClick={onClose}>
+                    İptal
+                  </Button>
+                </div>
+
+                {application && (onArchive || onDelete) && (
+                  <div className="flex gap-3">
+                    {onArchive && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className={cn("flex-1 h-11 text-sm bg-muted/50 hover:bg-muted font-medium gap-2", application.is_archived && "text-amber-600 hover:text-amber-700 hover:bg-amber-500/10")}
+                        onClick={() => {
+                          onArchive(application);
+                          onClose();
+                        }}
+                      >
+                        {application.is_archived ? (
+                          <><ArchiveRestore className="h-4 w-4" /> Çıkar</>
+                        ) : (
+                          <><Archive className="h-4 w-4" /> Arşivle</>
+                        )}
+                      </Button>
+                    )}
+
+                    {onDelete && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="flex-1 h-11 text-sm bg-destructive/5 text-destructive hover:text-destructive hover:bg-destructive/10 font-medium gap-2"
+                        onClick={() => {
+                          onDelete(application.id);
+                          onClose();
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" /> Sil
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
-              <Textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={3}
-                placeholder="Ek notlar..."
-              />
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Dosyalar ({files.length + pendingFiles.length}/4)</Label>
-            <div className="space-y-2">
-              {files.map((file) => (
-                <div key={file.id} className="flex items-center gap-2 rounded-md border border-border p-2">
-                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm truncate flex-1">{file.file_name}</span>
-                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePreviewFile(file)} title="Önizle">
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownloadFile(file)} title="İndir">
-                    <Download className="h-3.5 w-3.5" />
-                  </Button>
-                  {!isReadOnly && (
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteFile(file)} title="Sil">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-              
-              {pendingFiles.map((file, index) => (
-                <div key={`pending-${index}`} className="flex items-center gap-2 rounded-md border border-border p-2 bg-muted/30">
-                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm truncate flex-1 text-muted-foreground">{file.name} (Kaydedilecek)</span>
-                  {!isReadOnly && (
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== index))} title="Sil">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-
-              {!isReadOnly && (files.length + pendingFiles.length) < 4 && (
-                <label className="flex items-center gap-2 cursor-pointer rounded-md border border-dashed border-border p-3 hover:bg-muted/50 transition-colors">
-                  <Upload className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {uploading ? "Yükleniyor..." : "PDF veya Word yükle"}
-                  </span>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleFileUpload}
-                    disabled={uploading}
-                  />
-                </label>
-              )}
-              {isReadOnly && (files.length + pendingFiles.length) === 0 && (
-                <p className="text-muted-foreground text-sm italic py-1">Dosya eklenmemiş</p>
-              )}
-            </div>
-          </div>
-
-          {!isReadOnly ? (
-            <div className="flex flex-col gap-3 pt-4 border-t border-border">
-              <div className="flex gap-3">
-                <Button type="submit" className="flex-1">
-                  {application ? "Güncelle" : "Oluştur"}
-                </Button>
-                <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-                  İptal
-                </Button>
-              </div>
-
-              {application && onArchive && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full gap-2"
-                  onClick={() => {
-                    onArchive(application);
-                    onClose();
-                  }}
-                >
-                  {application.is_archived ? (
-                    <>
-                      <ArchiveRestore className="h-4 w-4" />
-                      Arşivden Çıkar
-                    </>
-                  ) : (
-                    <>
-                      <Archive className="h-4 w-4" />
-                      Başvuruyu Arşivle
-                    </>
-                  )}
-                </Button>
-              )}
-
-              {application && onDelete && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
-                  onClick={() => {
-                    onDelete(application.id);
-                    onClose();
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Başvuruyu Sil
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="pt-4 border-t border-border">
-              <Button type="button" variant="secondary" className="w-full" onClick={onClose}>
+              <Button type="button" variant="secondary" className="w-full h-12 sm:h-10 text-base sm:text-sm font-medium" onClick={onClose}>
                 Kapat
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </form>
       </div>
     </div>
   );
+}
 }

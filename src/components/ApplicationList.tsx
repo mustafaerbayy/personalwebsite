@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import { ExternalLink, Pencil, Search, SlidersHorizontal, ArrowUpDown, MoreHorizontal, Trash2, Briefcase, Check, Archive, ChevronDown, ChevronRight } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -255,76 +256,99 @@ export default function ApplicationList({
   );
 
   const renderMobileCard = (app: Application) => (
-    <div
+    <motion.div
       key={app.id}
-      className="group relative bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer pl-5"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group relative bg-card border border-border rounded-2xl shadow-sm active:scale-[0.98] transition-transform cursor-pointer overflow-hidden"
       onClick={() => onView(app)}
     >
+      {/* Color accent top bar */}
       <div className={cn(
-        "absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl",
+        "h-1 w-full",
         app.status === "basvuruldu" ? "bg-orange-500" :
         app.status === "online_degerlendirme" ? "bg-purple-500" :
         app.status === "ik_mulakati" ? "bg-pink-500" :
         app.status === "kabul" ? "bg-emerald-500" :
         "bg-rose-500"
       )} />
-      
-      <div className="flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="font-medium text-foreground truncate flex items-center gap-1.5">
+
+      <div className="p-4 space-y-3">
+        {/* Top row: Logo + Name + Status */}
+        <div className="flex items-start gap-3">
+          {/* Company avatar */}
+          <div className="relative shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-muted border border-border overflow-hidden">
+            {getDomain(app.website_url) ? (
+              <img 
+                src={`https://logo.clearbit.com/${getDomain(app.website_url)}`} 
+                alt={app.institution_name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div className={cn("absolute inset-0 bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase", 
+                            getDomain(app.website_url) ? "hidden" : "flex")}>
+              {app.institution_name.substring(0, 2)}
+            </div>
+          </div>
+          
+          {/* Name + Program */}
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-foreground truncate flex items-center gap-1.5 text-[15px]">
               {app.institution_name}
               {app.is_archived && <span title="Arşivlenmiş"><Archive className="h-3 w-3 text-muted-foreground shrink-0" /></span>}
             </p>
             <p className="text-sm text-muted-foreground truncate">{app.program_name}</p>
           </div>
-          <div className="flex items-center gap-1.5 self-start">
-            <StatusBadge status={app.status as ApplicationStatus} />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground"
-              onClick={(e) => { e.stopPropagation(); onEdit(app); }}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </div>
+
+          {/* Edit button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 -mt-0.5 -mr-1 text-muted-foreground hover:text-foreground shrink-0"
+            onClick={(e) => { e.stopPropagation(); onEdit(app); }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
         </div>
 
+        {/* Bottom row: Status + Date + Actions */}
+        <div className="flex items-center justify-between gap-2">
+          <StatusBadge status={app.status as ApplicationStatus} />
 
+          <div className="flex items-center gap-2">
+            {app.important_date && (new Date(app.important_date).getTime() > Date.now()) && (
+              <div className="flex items-center gap-1.5 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-1.5 rounded-lg border border-amber-500/20">
+                <span className="font-medium">
+                  {format(new Date(app.important_date), "dd MMM" + (format(new Date(app.important_date), "HH:mm") !== "00:00" ? " HH:mm" : ""), { locale: tr })}
+                </span>
+                {(new Date(app.important_date).getTime() - Date.now() < 24 * 60 * 60 * 1000 * 3) && (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  </span>
+                )}
+              </div>
+            )}
 
-        <div className="flex items-center justify-between pt-3 border-t border-border mt-1">
-          {app.important_date && (new Date(app.important_date).getTime() > Date.now()) ? (
-            <div className="flex flex-col text-xs bg-orange-500/10 text-orange-600 dark:text-orange-400 px-2 py-1.5 rounded-md border border-orange-500/20">
-              <span className="font-medium">
-                {format(new Date(app.important_date), "dd MMM yyyy" + (format(new Date(app.important_date), "HH:mm") !== "00:00" ? " HH:mm" : ""), { locale: tr })}
-              </span>
-              <span className="text-[10px] opacity-80">{app.important_date_label || "Yaklaşan Tarih"}</span>
-            </div>
-          ) : (
-            <div className="w-8" />
-          )}
-
-          <div className="flex-1" /> {/* Spacer to replace the middle date area */}
-
-
-
-          <div className="flex items-center gap-1">
             {app.important_date && onCompleteDate && (
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-full border-success/30 text-success hover:bg-success/10 hover:border-success/50 transition-all shadow-sm"
+                className="h-8 w-8 rounded-full border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all shadow-sm"
                 onClick={(e) => { e.stopPropagation(); onCompleteDate(app); }}
                 title="Tamamlandı"
               >
-                <Check className="h-5 w-5" />
+                <Check className="h-4 w-4" />
               </Button>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 
   return (

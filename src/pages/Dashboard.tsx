@@ -6,6 +6,7 @@ import ApplicationBoard from "@/components/ApplicationBoard";
 import CalendarView from "@/components/CalendarView";
 import ApplicationDrawer from "@/components/ApplicationDrawer";
 import ApplicationDetailsDialog from "@/components/ApplicationDetailsDialog";
+import ProfileEditDialog from "@/components/ProfileEditDialog";
 import { Application, STATUS_LABELS } from "@/types/application";
 import {
   LayoutDashboard,
@@ -23,6 +24,8 @@ import {
   Filter,
   Kanban,
   Mail,
+  Settings,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,14 +33,14 @@ import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function Dashboard() {
   const isMobile = useIsMobile();
-  const [isStatsExpanded, setIsStatsExpanded] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
   const {
     applications,
@@ -179,32 +182,36 @@ export default function Dashboard() {
 
   const stats = [
     {
-      label: "Toplam Başvuru",
+      label: "Toplam",
       value: totalApps,
       icon: Briefcase,
-      color: "text-primary bg-primary/10 border-primary/20",
-      gradient: "from-primary/5 to-transparent",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
     },
     {
-      label: "Aktif Süreç",
+      label: "Aktif",
       value: activeApps,
       icon: Clock,
-      color: "text-warning bg-warning/10 border-warning/20",
-      gradient: "from-warning/5 to-transparent",
+      color: "text-amber-500",
+      bgColor: "bg-amber-500/10",
+      borderColor: "border-amber-500/20",
     },
     {
       label: "Kabul",
       value: acceptedApps,
       icon: CheckCircle2,
-      color: "text-success bg-success/10 border-success/20",
-      gradient: "from-success/5 to-transparent",
+      color: "text-emerald-500",
+      bgColor: "bg-emerald-500/10",
+      borderColor: "border-emerald-500/20",
     },
     {
       label: "Ret",
       value: rejectedApps,
       icon: XCircle,
-      color: "text-destructive bg-destructive/10 border-destructive/20",
-      gradient: "from-destructive/5 to-transparent",
+      color: "text-rose-500",
+      bgColor: "bg-rose-500/10",
+      borderColor: "border-rose-500/20",
     },
   ];
 
@@ -214,136 +221,169 @@ export default function Dashboard() {
     { id: "calendar" as const, label: "Takvim", icon: Calendar },
   ];
 
+  const userName = profile?.full_name?.split(" ")[0] || "Kullanıcı";
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Top navbar */}
-      <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-2 sm:px-6">
-          <div className="flex items-center gap-1.5 sm:gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 sm:h-8 sm:w-8"
-              onClick={() => navigate("/")}
-            >
-              <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            </Button>
-            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-[10px] sm:text-xs font-bold text-primary-foreground">ME</span>
+      {/* Top header - simplified for mobile */}
+      <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-3 sm:px-6">
+          {/* Left: Logo + greeting */}
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm shadow-primary/25">
+              <span className="text-xs font-bold text-primary-foreground">BT</span>
             </div>
-            <span className="font-display font-semibold text-foreground hidden sm:inline">
-              Mustafa Erbay
-            </span>
+            {isMobile ? (
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground leading-none">Merhaba 👋</span>
+                <span className="text-sm font-semibold text-foreground leading-tight">{userName}</span>
+              </div>
+            ) : (
+              <span className="font-display font-semibold text-foreground">
+                Başvuru Takip
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveView(item.id)}
-                className={cn(
-                  "flex items-center rounded-md px-2 py-1.5 sm:px-3 text-sm font-medium transition-all sm:gap-1.5",
-                  activeView === item.id
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <item.icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                <span className="hidden sm:inline">{item.label}</span>
-              </button>
-            ))}
-          </div>
+          {/* Center: View switcher (desktop only) */}
+          {!isMobile && (
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveView(item.id)}
+                  className={cn(
+                    "flex items-center rounded-md px-3 py-1.5 text-sm font-medium transition-all gap-1.5",
+                    activeView === item.id
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Button onClick={handleTestEmail} variant="outline" size="sm" className="sm:gap-1.5 flex text-primary hover:text-primary border-primary/20 hover:bg-primary/10 h-8 w-8 sm:h-9 sm:w-auto px-0 sm:px-3">
-              <Mail className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Durum Raporu Gönder</span>
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <Button
+              onClick={handleTestEmail}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              title="Durum Raporu Gönder"
+            >
+              <Mail className="h-4 w-4" />
             </Button>
-            <Button onClick={handleAdd} size="sm" className="sm:gap-1.5 h-8 w-8 sm:h-9 sm:w-auto px-0 sm:px-3">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Yeni Başvuru</span>
-            </Button>
-            <ThemeToggle className="h-7 w-7 sm:h-8 sm:w-8" />
+            {!isMobile && (
+              <Button onClick={handleAdd} size="sm" className="gap-1.5 h-9 px-3 shadow-sm shadow-primary/20">
+                <Plus className="h-3.5 w-3.5" />
+                <span>Yeni Başvuru</span>
+              </Button>
+            )}
+            <ThemeToggle className="h-8 w-8" />
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-foreground"
-              onClick={signOut}
-              title="Çıkış Yap"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              onClick={() => setProfileOpen(true)}
+              title="Hesap Ayarları"
             >
-              <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <Settings className="h-4 w-4" />
             </Button>
+            {!isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={signOut}
+                title="Çıkış Yap"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* Mobile Toggle for Stats and Filters */}
-        {isMobile && (
-          <Button
-            variant="outline"
-            className="w-full flex items-center justify-between bg-card border-border shadow-sm h-11"
-            onClick={() => setIsStatsExpanded(!isStatsExpanded)}
-          >
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Filter className="h-4 w-4" />
-              <span className="text-sm font-medium">İstatistikler ve Filtreler</span>
-            </div>
-            {isStatsExpanded ? (
-              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            )}
-          </Button>
-        )}
-
-        <Collapsible open={!isMobile || isStatsExpanded}>
-          <CollapsibleContent className="space-y-6">
-            {/* Stats cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {stats.map((stat, i) => (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1, duration: 0.3 }}
-                  key={stat.label}
+      <main className={cn(
+        "max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6",
+        isMobile && "pb-24" // Space for bottom nav
+      )}>
+        {/* Compact inline stats for mobile */}
+        {isMobile ? (
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+            {stats.map((stat, i) => (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05, duration: 0.2 }}
+                key={stat.label}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border px-3 py-2.5 shrink-0 bg-card",
+                  stat.borderColor
+                )}
+              >
+                <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center", stat.bgColor)}>
+                  <stat.icon className={cn("h-3.5 w-3.5", stat.color)} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold text-foreground leading-none">{stat.value}</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight">{stat.label}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          /* Desktop stats cards */
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {stats.map((stat, i) => (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.3 }}
+                key={stat.label}
+                className={cn(
+                  "rounded-xl border bg-card p-4 flex items-center gap-3 transition-all hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-lg relative overflow-hidden group",
+                  stat.borderColor
+                )}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div
                   className={cn(
-                    "rounded-xl border border-border bg-card p-4 flex items-center gap-3 transition-all hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-lg relative overflow-hidden group",
-                    `bg-gradient-to-br ${stat.gradient}`
+                    "h-10 w-10 rounded-lg flex items-center justify-center shrink-0 border backdrop-blur-sm relative z-10",
+                    stat.bgColor,
+                    stat.borderColor,
+                    stat.color
                   )}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div
-                    className={cn(
-                      "h-10 w-10 rounded-lg flex items-center justify-center shrink-0 border backdrop-blur-sm relative z-10",
-                      stat.color
-                    )}
+                  <stat.icon className="h-5 w-5" />
+                </div>
+                <div className="relative z-10">
+                  <motion.p
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: i * 0.1 + 0.2, type: "spring" }}
+                    className="text-2xl font-display font-bold text-foreground leading-none"
                   >
-                    <stat.icon className="h-5 w-5" />
-                  </div>
-                  <div className="relative z-10">
-                    <motion.p
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: i * 0.1 + 0.2, type: "spring" }}
-                      className="text-2xl font-display font-bold text-foreground leading-none"
-                    >
-                      {stat.value}
-                    </motion.p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {stat.label}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+                    {stat.value}
+                  </motion.p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {stat.label}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {/* Content */}
         {isLoading ? (
-          <div className="flex items-center justify-center h-64 text-muted-foreground">
-            Yükleniyor...
+          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground gap-3">
+            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm">Yükleniyor...</span>
           </div>
         ) : activeView === "list" ? (
           <ApplicationList
@@ -353,7 +393,7 @@ export default function Dashboard() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onCompleteDate={handleCompleteDate}
-            showFilters={!isMobile || isStatsExpanded}
+            showFilters={true}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
           />
@@ -374,6 +414,61 @@ export default function Dashboard() {
         )}
       </main>
 
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <nav className="fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border safe-area-bottom">
+          <div className="flex items-center justify-around h-16 px-2">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveView(item.id)}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all min-w-[60px]",
+                  activeView === item.id
+                    ? "text-primary"
+                    : "text-muted-foreground active:scale-95"
+                )}
+              >
+                <div className={cn(
+                  "flex items-center justify-center h-8 w-8 rounded-xl transition-all",
+                  activeView === item.id && "bg-primary/10"
+                )}>
+                  <item.icon className={cn("h-5 w-5", activeView === item.id && "text-primary")} />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium",
+                  activeView === item.id ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {item.label}
+                </span>
+              </button>
+            ))}
+
+            {/* FAB-style add button in bottom nav */}
+            <button
+              onClick={handleAdd}
+              className="flex flex-col items-center gap-0.5 py-1 px-3 min-w-[60px]"
+            >
+              <div className="flex items-center justify-center h-10 w-10 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 -mt-2">
+                <Plus className="h-5 w-5" />
+              </div>
+              <span className="text-[10px] font-medium text-primary">Ekle</span>
+            </button>
+
+            {/* Profile/Logout */}
+            <button
+              onClick={signOut}
+              className="flex flex-col items-center gap-0.5 py-1 px-3 min-w-[60px] text-muted-foreground active:scale-95"
+            >
+              <div className="flex items-center justify-center h-8 w-8 rounded-xl">
+                <LogOut className="h-5 w-5" />
+              </div>
+              <span className="text-[10px] font-medium">Çıkış</span>
+            </button>
+          </div>
+        </nav>
+      )}
+
       <ApplicationDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -392,6 +487,11 @@ export default function Dashboard() {
         onEdit={handleEdit}
         onCompleteDate={handleCompleteDate}
         onRevertDate={handleRevertDate}
+      />
+
+      <ProfileEditDialog
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
       />
     </div>
   );
