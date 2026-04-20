@@ -785,4 +785,3 @@ export default function ApplicationDrawer({
     </div>
   );
 }
-}

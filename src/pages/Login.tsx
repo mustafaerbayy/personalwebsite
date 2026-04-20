@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { ArrowLeft, Mail, Lock, User, KeyRound, Eye, EyeOff } from "lucide-react";
 
 const SHORTCUT_MAP: Record<string, string> = {
@@ -31,8 +31,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signIn(resolvedEmail, password);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -59,8 +59,8 @@ export default function LoginPage() {
       setPendingEmail(resolvedEmail);
       setView("verify-otp");
       toast.success("Doğrulama kodu e-posta adresinize gönderildi!");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -72,8 +72,8 @@ export default function LoginPage() {
     try {
       await verifyOtp(pendingEmail, otpCode, "signup");
       toast.success("Hesabınız başarıyla doğrulandı! Giriş yapılıyor...");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -87,8 +87,8 @@ export default function LoginPage() {
       setPendingEmail(resolvedEmail);
       setView("reset-verify");
       toast.success("Şifre sıfırlama kodu e-posta adresinize gönderildi!");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -100,8 +100,8 @@ export default function LoginPage() {
     try {
       await verifyOtp(pendingEmail, otpCode, "recovery");
       toast.success("Doğrulama başarılı! Şimdi yeni şifrenizi belirleyebilirsiniz.");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ export default function LoginPage() {
     setOtpCode("");
   };
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
     exit: { opacity: 0, y: -20, transition: { duration: 0.2 } },
