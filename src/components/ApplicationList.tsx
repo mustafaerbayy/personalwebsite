@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import StatusBadge from "@/components/StatusBadge";
-import { Application, ApplicationStatus, STATUS_LABELS } from "@/types/application";
+import { Application, ApplicationStatus } from "@/types/application";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useCategories } from "@/hooks/useCategories";
 
 interface ApplicationListProps {
   applications: Application[];
@@ -48,6 +49,7 @@ export default function ApplicationList({
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const { categories, getCategory } = useCategories();
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -68,7 +70,7 @@ export default function ApplicationList({
   };
 
   const { filtered, archivedApps } = useMemo(() => {
-    let result = applications.filter((app) => {
+    const result = applications.filter((app) => {
       if (statusFilter !== "all" && app.status !== statusFilter) return false;
       if (search) {
         const q = search.toLowerCase();
@@ -95,14 +97,8 @@ export default function ApplicationList({
 
     const now = new Date();
     function getStatusPriority(status: string): number {
-      switch (status) {
-        case "kabul": return 1;
-        case "ik_mulakati": return 2;
-        case "online_degerlendirme": return 3;
-        case "basvuruldu": return 4;
-        case "reddedildi": return 5;
-        default: return 6;
-      }
+      const cat = categories.find(c => c.key === status);
+      return cat ? cat.order_index : 999;
     }
 
     activeList.sort((a, b) => {
@@ -133,7 +129,7 @@ export default function ApplicationList({
     });
 
     return { filtered: activeList, archivedApps: archiveList };
-  }, [applications, statusFilter, search, sortKey, sortDir]);
+  }, [applications, statusFilter, search, sortKey, sortDir, categories]);
 
 
   const SortHeader = ({ label, field }: { label: string; field: SortKey }) => (
@@ -264,14 +260,10 @@ export default function ApplicationList({
       onClick={() => onView(app)}
     >
       {/* Color accent top bar */}
-      <div className={cn(
-        "h-1 w-full",
-        app.status === "basvuruldu" ? "bg-orange-500" :
-        app.status === "online_degerlendirme" ? "bg-purple-500" :
-        app.status === "ik_mulakati" ? "bg-pink-500" :
-        app.status === "kabul" ? "bg-emerald-500" :
-        "bg-rose-500"
-      )} />
+      <div 
+        className="h-1 w-full"
+        style={{ backgroundColor: getCategory(app.status).color }}
+      />
 
       <div className="p-4 space-y-3">
         {/* Top row: Logo + Name + Status */}
@@ -372,8 +364,8 @@ export default function ApplicationList({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tüm Durumlar</SelectItem>
-              {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                <SelectItem key={key} value={key}>{label}</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.key} value={cat.key}>{cat.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>

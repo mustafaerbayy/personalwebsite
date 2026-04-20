@@ -7,7 +7,7 @@ import CalendarView from "@/components/CalendarView";
 import ApplicationDrawer from "@/components/ApplicationDrawer";
 import ApplicationDetailsDialog from "@/components/ApplicationDetailsDialog";
 import ProfileEditDialog from "@/components/ProfileEditDialog";
-import { Application, STATUS_LABELS } from "@/types/application";
+import { Application } from "@/types/application";
 import {
   LayoutDashboard,
   Calendar,

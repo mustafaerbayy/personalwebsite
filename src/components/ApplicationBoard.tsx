@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import StatusBadge from "@/components/StatusBadge";
 import { cn } from "@/lib/utils";
+import { useCategories } from "@/hooks/useCategories";
 
 interface ApplicationBoardProps {
   applications: Application[];
@@ -17,15 +18,8 @@ interface ApplicationBoardProps {
   onCompleteDate?: (app: Application) => void;
 }
 
-const COLUMNS: ApplicationStatus[] = [
-  "kabul",
-  "ik_mulakati",
-  "online_degerlendirme",
-  "basvuruldu",
-  "reddedildi"
-];
-
 export default function ApplicationBoard({ applications, onView, onEdit, onDelete, onCompleteDate }: ApplicationBoardProps) {
+  const { categories } = useCategories();
   const getDomain = (url: string | null) => {
     if (!url) return null;
     try {
@@ -37,15 +31,15 @@ export default function ApplicationBoard({ applications, onView, onEdit, onDelet
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-6 h-full snap-x">
-      {COLUMNS.map((status) => {
-        const columnApps = applications.filter((app) => app.status === status && !app.is_archived);
+      {categories.map((category) => {
+        const columnApps = applications.filter((app) => app.status === category.key && !app.is_archived);
         
         return (
-          <div key={status} className="flex-shrink-0 w-[300px] bg-muted/30 rounded-xl border border-border flex flex-col snap-center max-h-[70vh]">
+          <div key={category.key} className="flex-shrink-0 w-[300px] bg-muted/30 rounded-xl border border-border flex flex-col snap-center max-h-[70vh]">
             {/* Column Header */}
             <div className="p-3 border-b border-border flex items-center justify-between bg-card rounded-t-xl">
               <div className="flex items-center gap-2">
-                <StatusBadge status={status as ApplicationStatus} className="bg-transparent border-none px-1" />
+                <StatusBadge status={category.key} className="bg-transparent border-none px-1" />
                 <span className="bg-muted px-2 py-0.5 rounded-full text-xs font-medium text-muted-foreground">
                   {columnApps.length}
                 </span>

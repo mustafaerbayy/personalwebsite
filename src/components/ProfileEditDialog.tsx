@@ -10,8 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { User, Mail, Phone, FileText, Lock, Save, Loader2, Trash2, AlertTriangle, ShieldAlert, KeyRound } from "lucide-react";
+import { FileText, Kanban, KeyRound, Lock, Mail, Phone, Plus, Save, ShieldAlert, Trash2, User, AlertTriangle, GripVertical, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useCategories } from "@/hooks/useCategories";
+import { ApplicationCategory } from "@/types/application";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProfileEditDialogProps {
   open: boolean;
@@ -19,10 +22,12 @@ interface ProfileEditDialogProps {
 }
 
 export default function ProfileEditDialog({ open, onClose }: ProfileEditDialogProps) {
-  const { user, profile, updateProfile, updateEmail, updatePassword, sendDeleteCode, deleteAccount } = useAuth();
+  const { user, profile, updateProfile, updateEmail, updatePassword, sendDeleteCode, deleteAccount, verifyOtp, refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "security">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "security" | "categories">("profile");
   
+  const { categories, saveCategories } = useCategories();
+  const [editingCategories, setEditingCategories] = useState<Partial<ApplicationCategory>[]>([]);
   // Delete account states
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -40,6 +45,9 @@ export default function ProfileEditDialog({ open, onClose }: ProfileEditDialogPr
 
   // Security fields
   const [newEmail, setNewEmail] = useState("");
+  const [emailChangeStep, setEmailChangeStep] = useState<"form" | "code" | "code_old">("form");
+  const [emailVerificationCode, setEmailVerificationCode] = useState("");
+  const [oldEmailVerificationCode, setOldEmailVerificationCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -54,9 +62,17 @@ export default function ProfileEditDialog({ open, onClose }: ProfileEditDialogPr
     }
   }, [profile, user, open]);
 
+  useEffect(() => {
+    if (categories?.length > 0 && activeTab === "categories") {
+      setEditingCategories(categories);
+    }
+  }, [categories, activeTab]);
+
   // Reset delete states when dialog closes
   useEffect(() => {
     if (!open) {
+      setEmailChangeStep("form");
+      setEmailVerificationCode("");
       setDeleteConfirmText("");
       setDeleteStep("confirm");
       setVerificationCode("");
@@ -111,9 +127,66 @@ export default function ProfileEditDialog({ open, onClose }: ProfileEditDialogPr
     setLoading(true);
     try {
       await updateEmail(newEmail);
-      toast.success("E-posta değişikliği için doğrulama kodu gönderildi!");
+      toast.success("E-posta adresinize doğrulama kodu gönderildi!");
+      setEmailChangeStep("code");
     } catch (err: any) {
       toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyEmailCode = async () => {
+    if (emailChangeStep === "code") {
+      if (!emailVerificationCode || emailVerificationCode.length !== 6) {
+        toast.error("Lütfen yeni e-postanıza gelen 6 haneli kodu girin.");
+        return;
+      }
+    } else if (emailChangeStep === "code_old") {
+      if (!oldEmailVerificationCode || oldEmailVerificationCode.length !== 6) {
+        toast.error("Lütfen mevcut e-postanıza gelen 6 haneli kodu girin.");
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      if (emailChangeStep === "code") {
+        await verifyOtp(newEmail, emailVerificationCode, "email_change");
+        
+        // Ensure session is refreshed to get the latest JWT (with the new email)
+        await refreshUser();
+        const { data } = await supabase.auth.getUser();
+
+        if (data?.user?.email === newEmail) {
+          toast.success("E-posta adresiniz başarıyla güncellendi!");
+          setEmailChangeStep("form");
+          setEmailVerificationCode("");
+          setOldEmailVerificationCode("");
+        } else {
+          // Required old email code (secure email change is enabled)
+          toast.info("Güvenlik gereği mevcut e-postanıza gönderilen onay kodunu da girmeniz gerekiyor!");
+          setEmailChangeStep("code_old");
+        }
+      } else if (emailChangeStep === "code_old") {
+        if (user?.email) {
+          await verifyOtp(user.email, oldEmailVerificationCode, "email_change");
+        }
+        
+        await refreshUser();
+        const { data } = await supabase.auth.getUser();
+
+        if (data?.user?.email === newEmail) {
+          toast.success("E-posta adresiniz başarıyla güncellendi!");
+          setEmailChangeStep("form");
+          setEmailVerificationCode("");
+          setOldEmailVerificationCode("");
+        } else {
+          toast.error("Doğrulama yapıldı ancak e-posta güncellenmedi. Lütfen kodları kontrol edin.");
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Doğrulama kodu geçersiz veya süresi dolmuş.");
     } finally {
       setLoading(false);
     }
@@ -142,8 +215,8 @@ export default function ProfileEditDialog({ open, onClose }: ProfileEditDialogPr
   };
 
   const handleSendDeleteCode = async () => {
-    if (deleteConfirmText !== "HESABİMİ SİL") {
-      toast.error('Lütfen "HESABİMİ SİL" yazarak onaylayın.');
+    if (deleteConfirmText !== "HESABIMI SİL") {
+      toast.error('Lütfen "HESABIMI SİL" yazarak onaylayın.');
       return;
     }
     setIsSendingCode(true);
@@ -177,11 +250,35 @@ export default function ProfileEditDialog({ open, onClose }: ProfileEditDialogPr
     }
   };
 
-  const isConfirmTextValid = deleteConfirmText === "HESABİMİ SİL";
+  const isConfirmTextValid = deleteConfirmText === "HESABIMI SİL";
   const isCodeValid = verificationCode.length === 6;
+
+  const handleAddCategory = () => {
+    setEditingCategories([...editingCategories, { key: `cat_` + Date.now(), label: "Yeni Kategori", color: "#3b82f6" }]);
+  };
+
+  const handleRemoveCategory = (index: number) => {
+    setEditingCategories(editingCategories.filter((_, i) => i !== index));
+  };
+
+  const handleCategoryChange = (index: number, field: string, value: string) => {
+    const newCats = [...editingCategories];
+    newCats[index] = { ...newCats[index], [field]: value };
+    setEditingCategories(newCats);
+  };
+
+  const handleSaveCategories = async () => {
+    setLoading(true);
+    try {
+      await saveCategories.mutateAsync(editingCategories);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const tabs = [
     { id: "profile" as const, label: "Profil", icon: User },
+    { id: "categories" as const, label: "Kategoriler", icon: Kanban },
     { id: "security" as const, label: "Güvenlik", icon: Lock },
   ];
 
@@ -297,6 +394,76 @@ export default function ProfileEditDialog({ open, onClose }: ProfileEditDialogPr
             </>
           )}
 
+          {activeTab === "categories" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-top-1">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Kanban className="h-4 w-4 text-primary" />
+                    Başvuru Kategorileri
+                  </h3>
+                  <Button size="sm" variant="outline" onClick={handleAddCategory} className="h-8 gap-1">
+                    <Plus className="h-3.5 w-3.5" /> Ekle
+                  </Button>
+                </div>
+                
+                <div className="space-y-2 rounded-xl bg-muted/20 border border-border p-3 max-h-[50vh] overflow-y-auto">
+                  {editingCategories.map((cat, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-3 rounded-lg border bg-card shadow-sm hover:border-primary/30 transition-colors group">
+                      <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0 cursor-grab active:cursor-grabbing" />
+                      <div className="flex-1">
+                        <Input
+                          value={cat.label}
+                          onChange={(e) => handleCategoryChange(idx, "label", e.target.value)}
+                          className="h-9 font-medium"
+                          placeholder="Kategori Adı"
+                        />
+                      </div>
+                      <div className="relative w-9 h-9 rounded-md overflow-hidden flex-shrink-0 cursor-pointer border shadow-inner">
+                        <input
+                          type="color"
+                          value={cat.color || "#000000"}
+                          onChange={(e) => handleCategoryChange(idx, "color", e.target.value)}
+                          className="absolute inset-[-10px] w-[50px] h-[50px] cursor-pointer"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveCategory(idx)}
+                        className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {editingCategories.length === 0 && (
+                     <div className="text-sm text-muted-foreground p-8 text-center italic border-2 border-dashed border-border/50 rounded-lg">
+                        Mevcut kategori kalmadı, yeni bir tane ekleyerek başlayın.
+                     </div>
+                  )}
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    onClick={handleSaveCategories}
+                    disabled={loading}
+                    className="w-full h-11"
+                  >
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Kategorileri Kaydet
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === "security" && (
             <div className="space-y-6">
               {/* Email Change */}
@@ -305,28 +472,130 @@ export default function ProfileEditDialog({ open, onClose }: ProfileEditDialogPr
                   <Mail className="h-4 w-4 text-primary" />
                   E-posta Değiştir
                 </h3>
-                <div className="space-y-2">
-                  <Label htmlFor="new-email">Yeni E-posta</Label>
-                  <Input
-                    id="new-email"
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="Yeni e-posta adresiniz"
-                  />
-                </div>
-                <Button
-                  onClick={handleChangeEmail}
-                  disabled={loading}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "E-postayı Güncelle"
-                  )}
-                </Button>
+                {emailChangeStep === "form" ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="new-email">Yeni E-posta</Label>
+                      <Input
+                        id="new-email"
+                        type="email"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        placeholder="Yeni e-posta adresiniz"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleChangeEmail}
+                      disabled={loading}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {loading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "E-postayı Güncelle"
+                      )}
+                    </Button>
+                  </>
+                ) : emailChangeStep === "code" ? (
+                  <>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                      <Mail className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span>
+                        <strong>{newEmail}</strong> adresine doğrulama kodu gönderildi.
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email-code">Yeni E-posta Kodu</Label>
+                      <Input
+                        id="email-code"
+                        value={emailVerificationCode}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                          setEmailVerificationCode(val);
+                        }}
+                        placeholder="000000"
+                        className="text-center font-mono tracking-[0.3em] text-lg"
+                        maxLength={6}
+                        inputMode="numeric"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setEmailChangeStep("form");
+                          setEmailVerificationCode("");
+                          setOldEmailVerificationCode("");
+                        }}
+                        disabled={loading}
+                        variant="ghost"
+                        className="flex-1"
+                      >
+                        İptal
+                      </Button>
+                      <Button
+                        onClick={handleVerifyEmailCode}
+                        disabled={loading || emailVerificationCode.length !== 6}
+                        className="flex-1"
+                      >
+                        {loading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Doğrula"
+                        )}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 rounded-lg px-3 py-2">
+                      <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+                      <span>
+                        Güvenlik gereği mevcut e-postanıza (<strong>{user?.email}</strong>) gönderilen onay kodunu da girmelisiniz.
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="old-email-code">Mevcut E-posta Kodu</Label>
+                      <Input
+                        id="old-email-code"
+                        value={oldEmailVerificationCode}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                          setOldEmailVerificationCode(val);
+                        }}
+                        placeholder="000000"
+                        className="text-center font-mono tracking-[0.3em] text-lg border-amber-500/30 focus-visible:ring-amber-500/30"
+                        maxLength={6}
+                        inputMode="numeric"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setEmailChangeStep("form");
+                          setEmailVerificationCode("");
+                          setOldEmailVerificationCode("");
+                        }}
+                        disabled={loading}
+                        variant="ghost"
+                        className="flex-1"
+                      >
+                        İptal
+                      </Button>
+                      <Button
+                        onClick={handleVerifyEmailCode}
+                        disabled={loading || oldEmailVerificationCode.length !== 6}
+                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        {loading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Değişikliği Tamamla"
+                        )}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
 
               <Separator />
@@ -377,7 +646,7 @@ export default function ProfileEditDialog({ open, onClose }: ProfileEditDialogPr
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-destructive flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  Tehlikeli Bölge
+                  Hesap Silme
                 </h3>
                 <div className="rounded-xl border-2 border-destructive/20 bg-destructive/5 p-4 space-y-4">
                   <p className="text-xs text-muted-foreground">
@@ -390,13 +659,13 @@ export default function ProfileEditDialog({ open, onClose }: ProfileEditDialogPr
                   <div className="space-y-2">
                     <Label htmlFor="delete-confirm" className="text-xs text-destructive flex items-center gap-1.5">
                       <ShieldAlert className="h-3.5 w-3.5" />
-                      Onaylamak için <strong>HESABİMİ SİL</strong> yazın
+                      Onaylamak için <strong>HESABIMI SİL</strong> yazın
                     </Label>
                     <Input
                       id="delete-confirm"
                       value={deleteConfirmText}
                       onChange={(e) => setDeleteConfirmText(e.target.value)}
-                      placeholder="HESABİMİ SİL"
+                      placeholder="HESABIMI SİL"
                       className="border-destructive/30 focus-visible:ring-destructive/30"
                       disabled={deleteStep === "code" || deleteStep === "ready"}
                     />

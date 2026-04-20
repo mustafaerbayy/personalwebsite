@@ -3,7 +3,8 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInte
 import { tr } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Application, STATUS_COLORS } from "@/types/application";
+import { Application } from "@/types/application";
+import { useCategories } from "@/hooks/useCategories";
 import { cn } from "@/lib/utils";
 
 interface CalendarViewProps {
@@ -13,6 +14,7 @@ interface CalendarViewProps {
 
 export default function CalendarView({ applications, onSelectApp }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { getCategory } = useCategories();
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -84,18 +86,19 @@ export default function CalendarView({ applications, onSelectApp }: CalendarView
                   {format(day, "d")}
                 </div>
                 <div className="space-y-0.5">
-                  {dayApps.slice(0, 3).map((app) => (
-                    <button
-                      key={app.id}
-                      onClick={() => onSelectApp(app)}
-                      className={cn(
-                        "w-full text-left rounded px-1.5 py-0.5 text-[10px] font-medium truncate transition-opacity hover:opacity-80",
-                        STATUS_COLORS[app.status]
-                      )}
-                    >
-                      {app.institution_name}
-                    </button>
-                  ))}
+                  {dayApps.slice(0, 3).map((app) => {
+                    const cat = getCategory(app.status);
+                    return (
+                      <button
+                        key={app.id}
+                        onClick={() => onSelectApp(app)}
+                        className="w-full text-left rounded px-1.5 py-0.5 text-[10px] font-medium truncate transition-opacity hover:opacity-80"
+                        style={{ backgroundColor: `${cat.color}25`, color: cat.color }}
+                      >
+                        {app.institution_name}
+                      </button>
+                    );
+                  })}
                   {dayApps.length > 3 && (
                     <span className="text-[10px] text-muted-foreground px-1.5">
                       +{dayApps.length - 3} daha

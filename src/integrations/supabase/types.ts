@@ -55,6 +55,36 @@ export type Database = {
           },
         ]
       }
+      application_categories: {
+        Row: {
+          id: string
+          user_id: string
+          key: string
+          label: string
+          color: string
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          key: string
+          label: string
+          color: string
+          order_index: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          key?: string
+          label?: string
+          color?: string
+          order_index?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       applications: {
         Row: {
           applied_date: string | null
@@ -67,7 +97,7 @@ export type Database = {
           institution_name: string
           notes: string | null
           program_name: string
-          status: Database["public"]["Enums"]["application_status"]
+          status: string
           updated_at: string
           user_id: string
           website_url: string | null
@@ -86,7 +116,7 @@ export type Database = {
           institution_name: string
           notes?: string | null
           program_name: string
-          status?: Database["public"]["Enums"]["application_status"]
+          status?: string
           updated_at?: string
           user_id: string
           website_url?: string | null
@@ -105,7 +135,7 @@ export type Database = {
           institution_name?: string
           notes?: string | null
           program_name?: string
-          status?: Database["public"]["Enums"]["application_status"]
+          status?: string
           updated_at?: string
           user_id?: string
           website_url?: string | null

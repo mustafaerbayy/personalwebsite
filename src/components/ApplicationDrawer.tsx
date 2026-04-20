@@ -13,7 +13,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
-import { Application, ApplicationStatus, STATUS_LABELS, REMIND_BEFORE_OPTIONS, ApplicationFile } from "@/types/application";
+import { Application, ApplicationStatus, REMIND_BEFORE_OPTIONS, ApplicationFile } from "@/types/application";
+import { useCategories } from "@/hooks/useCategories";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -42,11 +43,12 @@ export default function ApplicationDrawer({
 }: ApplicationDrawerProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { categories } = useCategories();
   const [formData, setFormData] = useState({
     institution_name: "",
     program_name: "",
     department_names: [] as string[],
-    status: "basvuruldu" as ApplicationStatus,
+    status: (application?.status || categories?.[0]?.key || "basvur") as ApplicationStatus,
     notes: "",
     website_url: "",
     important_date: null as Date | null,
@@ -85,7 +87,7 @@ export default function ApplicationDrawer({
         institution_name: "",
         program_name: "",
         department_names: [],
-        status: "basvuruldu",
+        status: (categories?.[0]?.key || "basvur") as ApplicationStatus,
         notes: "",
         website_url: "",
         important_date: null,
@@ -176,7 +178,7 @@ export default function ApplicationDrawer({
           institution_name: "",
           program_name: "",
           department_names: [],
-          status: "basvuruldu",
+          status: (categories?.[0]?.key || "basvur") as ApplicationStatus,
           notes: "",
           website_url: "",
           important_date: null,
@@ -375,8 +377,8 @@ export default function ApplicationDrawer({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key} className="py-2.5 sm:py-1.5">{label}</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.key} value={cat.key} className="py-2.5 sm:py-1.5">{cat.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

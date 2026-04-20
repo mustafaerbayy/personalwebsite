@@ -25,8 +25,9 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
-  updateEmail: (newEmail: string) => Promise<void>;
+  updateEmail: (newEmail: string) => Promise<any>;
   refreshProfile: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   clearPasswordReset: () => void;
   sendDeleteCode: () => Promise<void>;
   deleteAccount: (code: string) => Promise<void>;
@@ -56,16 +57,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      console.log("Auth event:", event, session?.user?.email);
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+      } else if (event === "SIGNED_OUT") {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+      }
+      
       if (event === "PASSWORD_RECOVERY") {
         setNeedsPasswordReset(true);
       }
+      
       if (session?.user) {
         // Defer the profile fetch to avoid Supabase auth deadlock
         setTimeout(() => fetchProfile(session.user.id), 0);
-      } else {
-        setProfile(null);
       }
       setLoading(false);
     });
@@ -99,12 +107,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const verifyOtp = async (email: string, token: string, type: "signup" | "recovery" | "email_change") => {
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       email,
       token,
       type,
     });
     if (error) throw error;
+    
+    if (data.session) {
+      setSession(data.session);
+      setUser(data.session.user);
+    } else if (data.user) {
+      setUser(data.user);
+    }
   };
 
   const resetPassword = async (email: string) => {
@@ -125,8 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateEmail = async (newEmail: string) => {
-    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    const { data, error } = await supabase.auth.updateUser({ email: newEmail });
     if (error) throw error;
+    return data;
   };
 
   const updateProfile = async (data: Partial<Profile>) => {
@@ -150,6 +166,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+  };
+
+  const refreshUser = async () => {
+    await supabase.auth.refreshSession();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setUser(user);
+    }
   };
 
   const sendDeleteCode = async () => {
@@ -203,6 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateProfile,
       updateEmail,
       refreshProfile,
+      refreshUser,
       clearPasswordReset,
       sendDeleteCode,
       deleteAccount,

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ApplicationStatus, STATUS_LABELS, STATUS_STYLES } from "@/types/application";
+import { useCategories } from "@/hooks/useCategories";
 
 interface StatusBadgeProps {
   status: string;
@@ -7,20 +7,26 @@ interface StatusBadgeProps {
 }
 
 export default function StatusBadge({ status, className }: StatusBadgeProps) {
-  const currentStatus = status as ApplicationStatus;
-  const style = STATUS_STYLES[currentStatus] || STATUS_STYLES.basvuruldu;
-  const label = STATUS_LABELS[currentStatus] || "Bilinmiyor";
+  const { getCategory } = useCategories();
+  const category = getCategory(status);
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
-        style.wrapper,
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors border",
         className
       )}
+      style={{
+        backgroundColor: `${category.color}20`,
+        color: category.color,
+        borderColor: `${category.color}40`,
+      }}
     >
-      <span className={cn("h-1.5 w-1.5 rounded-full", style.dot)} />
-      {label}
+      <span 
+        className="h-1.5 w-1.5 rounded-full" 
+        style={{ backgroundColor: category.color, boxShadow: `0 0 5px ${category.color}80` }}
+      />
+      {category.label}
     </span>
   );
 }
