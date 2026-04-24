@@ -1,11 +1,15 @@
+// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// Deno ortam değişkenlerinin TypeScript hatası vermemesi için:
+declare const Deno: any;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -145,14 +149,39 @@ Deno.serve(async (req) => {
         const { data: userData } = await supabase.auth.admin.getUserById(reminder.user_id);
         if (!userData.user?.email || !app) continue;
 
+        let remainingStr = '';
+        if (app.important_date) {
+          const impDate = new Date(app.important_date);
+          const diffMs = impDate.getTime() - nowObj.getTime();
+          if (diffMs > 0) {
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            if (diffDays > 0) remainingStr += `${diffDays} gün `;
+            if (diffHours > 0) remainingStr += `${diffHours} saat `;
+            if (diffMins > 0) remainingStr += `${diffMins} dakika`;
+            remainingStr = remainingStr.trim();
+          }
+        }
+        if (!remainingStr) remainingStr = 'Çok az zaman';
+
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
           body: JSON.stringify({
-            from: "Basvuru Takip <info@mustafaerbay.online>",
+            from: "Başvuru Takip <info@mustafaerbay.online>",
             to: [userData.user.email],
-            subject: `Hatırlatma: ${app.institution_name} - ${app.important_date_label}`,
-            html: `<h3>Başvuru Hatırlatıcı</h3><p><strong>${app.institution_name}</strong> başvurunuz yaklaşıyor.</p>`,
+            subject: `Hatırlatma: ${app.institution_name} - ${app.important_date_label || 'Önemli Tarih'} (${remainingStr} kaldı)`,
+            html: `
+              <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 10px;">
+                <h2 style="color: #4f46e5; margin-top: 0;">Başvuru Hatırlatıcısı</h2>
+                <p style="font-size: 16px;"><strong>${app.institution_name}</strong> başvurunuzdaki <strong>${app.important_date_label || 'Önemli Tarih'}</strong> yaklaşıyor.</p>
+                <div style="margin: 25px 0;">
+                  <span style="background: #ef4444; color: white; font-weight: bold; padding: 8px 15px; border-radius: 20px; font-size: 15px;">⏰ Kalan Süre: ${remainingStr}</span>
+                </div>
+                <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">Sisteme giriş yaparak detayları görüntüleyebilirsiniz.</p>
+              </div>
+            `,
           }),
         });
 

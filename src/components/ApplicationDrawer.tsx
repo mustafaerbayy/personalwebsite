@@ -193,7 +193,8 @@ export default function ApplicationDrawer({
 
       onClose();
     } catch (error) {
-      toast.error("İşlem sırasında bir hata oluştu");
+      console.error("APP_CREATE_ERROR:", error);
+      toast.error("İşlem sırasında bir hata oluştu: " + (error as any).message);
     } finally {
       setUploading(false);
     }
